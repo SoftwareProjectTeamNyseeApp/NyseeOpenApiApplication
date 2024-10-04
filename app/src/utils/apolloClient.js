@@ -1,9 +1,11 @@
 import { ApolloClient, InMemoryCache } from '@apollo/client';
-import { Buffer } from 'buffer';
+import Constants from 'expo-constants';
+import { Buffer } from 'buffer'; // Add this import for Buffer
 
+// Function to generate Base64 encoded credentials
 const generateBase64Credentials = () => {
-  const clientId = process.env.CLIENT_ID;
-  const clientSecret = process.env.CLIENT_SECRET;
+  const clientId = process.env.CLIENT_ID; // Read from .env
+  const clientSecret = process.env.CLIENT_SECRET; // Read from .env
   return Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 };
 
