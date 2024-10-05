@@ -1,6 +1,7 @@
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import Constants from 'expo-constants';
-import { Buffer } from 'buffer'; // Add this import for Buffer
+import { Buffer } from 'buffer';
+
 
 // Function to generate Base64 encoded credentials
 const generateBase64Credentials = () => {
@@ -16,6 +17,10 @@ const createApolloClient = () => {
     cache: new InMemoryCache(),
     headers: {
       Authorization: `Basic ${authCredentials}`,
+      'Accept': 'application/x-protobuf', // Accept Protobuf response
+    },
+    fetchOptions: {
+      method: 'GET', // Ensure GET method is used
     },
   });
 };
