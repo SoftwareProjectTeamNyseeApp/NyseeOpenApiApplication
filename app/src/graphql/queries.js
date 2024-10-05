@@ -57,3 +57,28 @@ export const GET_ITINERARY = gql`
     }
   }
 `
+
+export const GET_CUSTOM_ITINERARY_QUERY = gql`
+  query getCustomItinerary(
+    $from: InputCoordinates!
+    $to: InputCoordinates!
+  ) {
+    plan(
+      from: $from
+      to: $to
+      numItineraries: 3
+    ) {
+      itineraries {
+        legs {
+          startTime
+          endTime
+          mode
+          duration
+          realTime
+          distance
+          transitLeg
+        }
+      }
+    }
+  }
+`

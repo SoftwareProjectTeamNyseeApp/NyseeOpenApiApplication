@@ -6,6 +6,7 @@ import Test from './src/components/Test';
 import DestinationSelect from './src/components/DestinationSelect';
 import createApolloClient from './src/utils/apolloClient';
 import Constants from 'expo-constants';
+import TestQuery from './src/components/TestQuery';
 
 const apolloClient = createApolloClient();
 
@@ -16,6 +17,8 @@ export default function App() {
         <Text>Hello Nysee!</Text>
         <StatusBar style="auto" />
         <DestinationSelect />
+        {/* <Test /> */}
+        {/* <TestQuery /> */}
       </View>
     </ApolloProvider>
   );

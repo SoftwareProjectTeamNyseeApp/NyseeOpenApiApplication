@@ -1,10 +1,11 @@
 import Constants from 'expo-constants';
 import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable } from 'react-native';
 import { useFormik } from 'formik';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation, gql, useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
 import { GET_CUSTOM_ITINERARY } from '../graphql/mutations';
-import { useState } from 'react';
+import { GET_CUSTOM_ITINERARY_QUERY } from '../graphql/queries';
+import { useEffect, useState } from 'react';
 
 const styles = StyleSheet.create({
   flexContainer: {
@@ -69,18 +70,20 @@ const LocationForm = ({ onSubmit }) => {
           <Text>Get itineraries</Text>
         </Pressable>
       </View>
-
     </SafeAreaView>
   )
 }
 
 // use Geocoding API to search for addresses and coordinates
+// get coordinates for one place
+// input address, eg. tamk and return lat and lon coordinates for it
 const getCoordinates = async (values) => {
   const url = (
     'https://api.digitransit.fi/geocoding/v1/search?' +
     new URLSearchParams({ text: values })
   );
 
+  // HTTP GET req for Geocaching API
   const res = await fetch(url, {
     headers: {
       'Cache-control': 'no-cache',
@@ -103,59 +106,89 @@ const getCoordinates = async (values) => {
     console.error(error.message)
   })
 
+  // return coordinates [lat, lon]
   return res
 }
 
+
 const DestinationSelect = () => {
-  //const [originCoordinates, setOriginCoordinates] = useState([])
-  //const [destinationCoordinates, setDestinationCoordinates] = useState([])
+  // useLazyQuery to perform query later, not instantly
+  const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_CUSTOM_ITINERARY_QUERY)
 
-  const [getCustomItinerary, { data, loading, error }] = useMutation(GET_CUSTOM_ITINERARY)
-
+  // when form is submitted, coordinates of addresses are fetched and query is performed
   const onSubmit = async (values) => {
-    const fetchedOriginCoordinates = await getCoordinates(values.origin)
-    const fetchedDestinationCoordinates = await getCoordinates(values.destination)
-
-    //setOriginCoordinates(fetchedOriginCoordinates)
-    //setDestinationCoordinates(fetchedDestinationCoordinates)
-
+    const fetchedOriginCoordinates = await getCoordinates(values.origin);
+    const fetchedDestinationCoordinates = await getCoordinates(values.destination);
+    // place fetched coordinates into variables and do the query
     getCustomItinerary({
       variables: {
-        from: {lat: fetchedOriginCoordinates[1], lon: fetchedOriginCoordinates[0]},
-        to: {lat: fetchedDestinationCoordinates[1], lon: fetchedDestinationCoordinates[0]}
+        from: { lat: fetchedOriginCoordinates[1], lon: fetchedOriginCoordinates[0] },
+        to: { lat: fetchedDestinationCoordinates[1], lon: fetchedDestinationCoordinates[0] }
       }
     })
+    //setOriginCoordinates(fetchedOriginCoordinates)
+    //setDestinationCoordinates(fetchedDestinationCoordinates)
+/*     try {
+      //const response = await getCustomItinerary({
+        variables: {
+          numItineraries: 1
+          //from: { lat: fetchedOriginCoordinates[1], lon: fetchedOriginCoordinates[0] },
+          //to: { lat: fetchedDestinationCoordinates[1], lon: fetchedDestinationCoordinates[0] }
+        }
+      });
+      console.log(response.data.getCustomItinerary);
+    } catch (error) {
+      console.error("Error fetching itinerary:", error);
+      if (error.graphQLErrors) {
+        error.graphQLErrors.forEach(({ message }) => {
+          console.error("GraphQL error:", message);
+        });
+      }
+      if (error.networkError) {
+        console.error("Network error:", error.networkError);
+      }
+    }
+  } */
   }
 
-  //const { data, error, loading } = useQuery(GET_ITINERARY);
 
-  if (loading) {
-    return <Text>Loading...</Text>
+  const Result = () => {
+    if (loading) {
+      return <Text>Loading...</Text>
+    }
+    if (error) {
+      return <Text>Error: {error}</Text>
+    }
+    if (!data) {
+      return null
+    }
+    return (
+      <View>
+        <Text>Data received!</Text>
+        <Text>Note: this is just 1 itinerary, need to iterate through data better and present in a nicer way</Text>
+        <FlatList
+          style={styles.flexItemResult}
+          data={data.plan.itineraries[0].legs}
+          keyExtractor={(item, index) => String(index)}
+          renderItem={({ item }) => (
+            <View>
+              <Text>Start time: {item.startTime}</Text>
+              <Text>End time: {item.endTime}</Text>
+              <Text>Mode: {item.mode}</Text>
+              <Text>Distance: {item.distance}</Text>
+              <Text>Duration: {item.duration}</Text>
+            </View>
+          )}
+        />
+      </View>
+
+    )
   }
-  if (error) {
-    return <Text>Error! ${error.message}</Text>
-  }
-  //console.log(data.plan.itineraries[0].legs[0])
 
   return (
     <View style={styles.flexContainer}>
       <LocationForm onSubmit={onSubmit}/>
-      <Text>Data returned</Text>
-      <Text>${data}</Text>
-      {/* <FlatList
-        style={styles.flexItemResult}
-        data={data.plan.itineraries[0].legs}
-        keyExtractor={(item, index) => String(index)}
-        renderItem={({ item }) => (
-          <View>
-            <Text>Start time: {item.startTime}</Text>
-            <Text>End time: {item.endTime}</Text>
-            <Text>Mode: {item.mode}</Text>
-            <Text>Distance: {item.distance}</Text>
-            <Text>Duration: {item.duration}</Text>
-          </View>
-        )}
-      /> */}
+      <Result />
     </View>
   );
 }
