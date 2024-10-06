@@ -82,3 +82,16 @@ export const GET_CUSTOM_ITINERARY_QUERY = gql`
     }
   }
 `
+
+export const GET_VEHICLE_INFO = gql`
+  query getVehicleInfo($id: ID!) {
+    vehicle(id: $id) {
+      id
+      routes {
+        id
+        name
+        timetable
+      }
+    }
+  }
+`
