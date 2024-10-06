@@ -1,11 +1,8 @@
 import Constants from 'expo-constants';
 import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable } from 'react-native';
 import { useFormik } from 'formik';
-import { useQuery, useMutation, gql, useLazyQuery } from '@apollo/client';
+import { useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
-import { GET_CUSTOM_ITINERARY } from '../graphql/mutations';
-import { GET_CUSTOM_ITINERARY_QUERY } from '../graphql/queries';
-import { useEffect, useState } from 'react';
 
 const styles = StyleSheet.create({
   flexContainer: {
@@ -25,10 +22,12 @@ const styles = StyleSheet.create({
     height: 40,
     margin: 12,
     borderWidth: 1,
-    padding: 10
+    padding: 10,
+    width: 300
   }
 });
 
+// TODO: add validation to form
 /* const validate = (values) => {
   let errors = {};
   if (!values.origin) {
@@ -65,6 +64,18 @@ const LocationForm = ({ onSubmit }) => {
           onChangeText={formik.handleChange('destination')}
           value={formik.values.destination}
           placeholder="Enter destination"
+        />
+        <TextInput
+          style={styles.input}
+          onChangeText={formik.handleChange('date')}
+          value={formik.values.date}
+          placeholder="Enter date: YYYY-MM-DD (optional)"
+        />
+        <TextInput
+          style={styles.input}
+          onChangeText={formik.handleChange('time')}
+          value={formik.values.time}
+          placeholder="Enter time: hh:mm:ss (optional)"
         />
         <Pressable onPress={formik.handleSubmit}>
           <Text>Get itineraries</Text>
@@ -110,33 +121,26 @@ const getCoordinates = async (values) => {
   return res
 }
 
-
 const DestinationSelect = () => {
   // useLazyQuery to perform query later, not instantly
-  const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_CUSTOM_ITINERARY_QUERY)
+  const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_ITINERARY)
 
   // when form is submitted, coordinates of addresses are fetched and query is performed
   const onSubmit = async (values) => {
     const fetchedOriginCoordinates = await getCoordinates(values.origin);
     const fetchedDestinationCoordinates = await getCoordinates(values.destination);
-    // place fetched coordinates into variables and do the query
-    getCustomItinerary({
-      variables: {
-        from: { lat: fetchedOriginCoordinates[1], lon: fetchedOriginCoordinates[0] },
-        to: { lat: fetchedDestinationCoordinates[1], lon: fetchedDestinationCoordinates[0] }
-      }
-    })
-    //setOriginCoordinates(fetchedOriginCoordinates)
-    //setDestinationCoordinates(fetchedDestinationCoordinates)
-/*     try {
-      //const response = await getCustomItinerary({
+
+    // place fetched coordinates into variables and perform the query
+    try {
+      const response = await getCustomItinerary({
         variables: {
-          numItineraries: 1
-          //from: { lat: fetchedOriginCoordinates[1], lon: fetchedOriginCoordinates[0] },
-          //to: { lat: fetchedDestinationCoordinates[1], lon: fetchedDestinationCoordinates[0] }
+          from: { lat: fetchedOriginCoordinates[1], lon: fetchedOriginCoordinates[0] },
+          to: { lat: fetchedDestinationCoordinates[1], lon: fetchedDestinationCoordinates[0] },
+          date: values.date,
+          time: values.time
         }
       });
-      console.log(response.data.getCustomItinerary);
+      console.log(response.data);
     } catch (error) {
       console.error("Error fetching itinerary:", error);
       if (error.graphQLErrors) {
@@ -148,9 +152,7 @@ const DestinationSelect = () => {
         console.error("Network error:", error.networkError);
       }
     }
-  } */
   }
-
 
   const Result = () => {
     if (loading) {
@@ -172,11 +174,12 @@ const DestinationSelect = () => {
           keyExtractor={(item, index) => String(index)}
           renderItem={({ item }) => (
             <View>
-              <Text>Start time: {item.startTime}</Text>
-              <Text>End time: {item.endTime}</Text>
+              <Text>-------------</Text>
+              <Text>Start time: {new Date(item.startTime).toLocaleString()}</Text>
+              <Text>End time: {new Date(item.endTime).toLocaleString()}</Text>
               <Text>Mode: {item.mode}</Text>
-              <Text>Distance: {item.distance}</Text>
-              <Text>Duration: {item.duration}</Text>
+              <Text>Distance: {item.distance} meters</Text>
+              <Text>Duration: {item.duration / 60} minutes</Text>
             </View>
           )}
         />
