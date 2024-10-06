@@ -34,39 +34,21 @@ export const GET_TEST_ITINERARY = gql`
       }
     }
   }
-`;
-
-export const GET_ITINERARY = gql`
-  {
-    plan(
-      from: {lat: 60.168992, lon: 24.932366}
-      to: {lat: 60.175294, lon: 24.684855}
-      numItineraries: 3
-    ) {
-      itineraries {
-        legs {
-          startTime
-          endTime
-          mode
-          duration
-          realTime
-          distance
-          transitLeg
-        }
-      }
-    }
-  }
 `
 
-export const GET_CUSTOM_ITINERARY_QUERY = gql`
+export const GET_ITINERARY = gql`
   query getCustomItinerary(
     $from: InputCoordinates!
     $to: InputCoordinates!
+    $date: String
+    $time: String
   ) {
     plan(
       from: $from
       to: $to
       numItineraries: 3
+      date: $date
+      time: $time
     ) {
       itineraries {
         legs {
