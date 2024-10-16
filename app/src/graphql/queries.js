@@ -55,6 +55,20 @@ export const GET_ITINERARY = gql`
           startTime
           endTime
           mode
+          from {
+            lat
+            lon
+            name
+            stop {
+              code
+              name
+            }
+          },
+          to {
+            lat
+            lon
+            name
+          },
           duration
           realTime
           distance

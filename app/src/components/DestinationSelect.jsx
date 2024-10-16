@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable } from 'react-native';
+import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity } from 'react-native';
 import { useFormik } from 'formik';
 import { useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
   flexContainer: {
     flexDirection: 'column',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   flexItemInput: {
     flexGrow: 0,
@@ -16,7 +16,8 @@ const styles = StyleSheet.create({
   },
   flexItemResult: {
     flexGrow: 0,
-    backgroundColor: 'lightblue'
+    backgroundColor: 'lightblue',
+    height: 300
   },
   input: {
     height: 40,
@@ -24,6 +25,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
     width: 300
+  },
+  pressable: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   }
 });
 
@@ -121,9 +125,10 @@ const getCoordinates = async (values) => {
   return res
 }
 
-const DestinationSelect = () => {
+const DestinationSelect = ({ navigation }) => {
   // useLazyQuery to perform query later, not instantly
   const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_ITINERARY)
+  let itineraries = ''
 
   // when form is submitted, coordinates of addresses are fetched and query is performed
   const onSubmit = async (values) => {
@@ -164,27 +169,47 @@ const DestinationSelect = () => {
     if (!data) {
       return null
     }
+    if (data) {
+      /* itineraries = data.plan.itineraries.map(d =>
+        d.legs
+      ) */
+      itineraries = data.plan.itineraries.map((item, index) => (
+        { ...item, id: index + 1 }
+      ))
+      console.log("itinearies", itineraries)
+    }
     return (
       <View>
         <Text>Data received!</Text>
-        <Text>Note: this is just 1 itinerary, need to iterate through data better and present in a nicer way</Text>
         <FlatList
           style={styles.flexItemResult}
-          data={data.plan.itineraries[0].legs}
-          keyExtractor={(item, index) => String(index)}
+          data={itineraries}
+          //keyExtractor={(item, index) => String(index)}
           renderItem={({ item }) => (
             <View>
-              <Text>-------------</Text>
-              <Text>Start time: {new Date(item.startTime).toLocaleString()}</Text>
-              <Text>End time: {new Date(item.endTime).toLocaleString()}</Text>
-              <Text>Mode: {item.mode}</Text>
-              <Text>Distance: {item.distance} meters</Text>
-              <Text>Duration: {item.duration / 60} minutes</Text>
+              <Text>------------</Text>
+              <TouchableOpacity
+                style={styles.pressable}
+                onPress={() => navigation.navigate('ItineraryDetails', {
+                  data: item.legs,
+                  number: item.id
+                  // NOTE: save current query eg. in global store
+                  // don't send data with params
+                  // can be used to send itinerary id, starttime or something
+                  // for now just testing detailed screen with params
+                })}
+              >
+                <Text>Start time: {new Date(item.legs[0].startTime).toLocaleString()}</Text>
+                <Text>From: {item.legs[0].from.name}</Text>
+                <Text>End time: {new Date(item.legs[item.legs.length - 1].endTime).toLocaleString()}</Text>
+                <Text>To: {item.legs[item.legs.length - 1].to.name}</Text>
+                {/* TODO: show addresses instead of Origin/Destination */}
+              </TouchableOpacity>
+
             </View>
           )}
         />
       </View>
-
     )
   }
 
