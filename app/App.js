@@ -19,17 +19,15 @@ export default function App() {
     <NavigationContainer>
       <ApolloProvider client={apolloClient}>
         <Stack.Navigator initialRouteName="DestinationSelect">
-{/*           <View style={styles.container}>
-            <Text>Hello Nysee!</Text>
-            <StatusBar style="auto" /> */}
-            {/* <DestinationSelect /> */}
-            {/* <Test /> */}
-            {/* <TestQuery /> */}
-            <Stack.Screen name="DestinationSelect" component={DestinationSelect} />
-            <Stack.Screen name="ItineraryDetails" component={ItineraryDetails} />
-          {/* </View> */}
+            <Stack.Screen
+              name="DestinationSelect"
+              component={DestinationSelect}
+            />
+            <Stack.Screen
+              name="ItineraryDetails"
+              component={ItineraryDetails}
+            />
         </Stack.Navigator>
-
       </ApolloProvider>
     </NavigationContainer>
   );

@@ -17,7 +17,8 @@ const styles = StyleSheet.create({
   flexItemResult: {
     flexGrow: 0,
     backgroundColor: 'lightblue',
-    height: 300
+    height: 300,
+    width: 300
   },
   input: {
     height: 40,
@@ -125,6 +126,15 @@ const getCoordinates = async (values) => {
   return res
 }
 
+export function getItineraryTimeAndDuration (itinerary) {
+  const startTime = new Date(itinerary[0].startTime)
+  const endTime = new Date(itinerary[itinerary.length - 1].endTime)
+  const duration = ((endTime - startTime) / 60000).toFixed()
+  return startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "-" +
+    endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (" +
+    duration + " min)"
+}
+
 const DestinationSelect = ({ navigation }) => {
   // useLazyQuery to perform query later, not instantly
   const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_ITINERARY)
@@ -145,7 +155,7 @@ const DestinationSelect = ({ navigation }) => {
           time: values.time
         }
       });
-      console.log(response.data);
+      console.log("Response for query:", response.data);
     } catch (error) {
       console.error("Error fetching itinerary:", error);
       if (error.graphQLErrors) {
@@ -158,6 +168,15 @@ const DestinationSelect = ({ navigation }) => {
       }
     }
   }
+
+/*   function getItineraryTimeAndDuration (itinerary) {
+    const startTime = new Date(itinerary[0].startTime)
+    const endTime = new Date(itinerary[itinerary.length - 1].endTime)
+    const duration = ((endTime - startTime) / 60000).toFixed()
+    return startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "-" +
+      endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (" +
+      duration + " min)"
+  } */
 
   const Result = () => {
     if (loading) {
@@ -173,10 +192,11 @@ const DestinationSelect = ({ navigation }) => {
       /* itineraries = data.plan.itineraries.map(d =>
         d.legs
       ) */
+     // add id to itineraries
       itineraries = data.plan.itineraries.map((item, index) => (
         { ...item, id: index + 1 }
       ))
-      console.log("itinearies", itineraries)
+      console.log("itinearies:", itineraries)
     }
     return (
       <View>
@@ -199,13 +219,14 @@ const DestinationSelect = ({ navigation }) => {
                   // for now just testing detailed screen with params
                 })}
               >
-                <Text>Start time: {new Date(item.legs[0].startTime).toLocaleString()}</Text>
-                <Text>From: {item.legs[0].from.name}</Text>
-                <Text>End time: {new Date(item.legs[item.legs.length - 1].endTime).toLocaleString()}</Text>
-                <Text>To: {item.legs[item.legs.length - 1].to.name}</Text>
-                {/* TODO: show addresses instead of Origin/Destination */}
+                <Text>
+                  Time: {getItineraryTimeAndDuration(item.legs)}
+                </Text>
+                <Text>
+                  From stop: {item.legs[1].from.name} { }
+                  ({item.legs[0].distance.toFixed()} m away)
+                </Text>
               </TouchableOpacity>
-
             </View>
           )}
         />
