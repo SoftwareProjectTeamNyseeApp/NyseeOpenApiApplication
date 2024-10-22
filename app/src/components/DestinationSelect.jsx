@@ -203,7 +203,6 @@ const DestinationSelect = ({ navigation }) => {
   const onSubmit = async (values) => {
     const fetchedOriginCoordinates = await getCoordinates(values.origin);
     const fetchedDestinationCoordinates = await getCoordinates(values.destination);
-    console.log("VALUES", values)
 
     // place fetched coordinates into variables and perform the query
     try {

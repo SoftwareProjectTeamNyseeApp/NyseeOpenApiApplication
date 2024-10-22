@@ -22,7 +22,6 @@ export default function ItineraryDetails({ route }) {
   const { itineraries } = useItineraries();
   const { itineraryId } = route.params;
   const selectedItinerary = itineraries.filter((itinerary) => itinerary.id === itineraryId)
-  console.log("selectedItineraryLegs", selectedItinerary[0].legs)
   return (
     <View style={styles.flexContainer}>
       <Text>Itinerary {itineraryId}</Text>
