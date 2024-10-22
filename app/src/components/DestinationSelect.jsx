@@ -1,8 +1,12 @@
 import Constants from 'expo-constants';
 import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity } from 'react-native';
-import { useFormik } from 'formik';
+import { Formik } from 'formik';
 import { useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
+import { useItineraries } from '../contexts/ItineraryContext';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useState } from 'react';
+import moment from 'moment/moment';
 
 const styles = StyleSheet.create({
   flexContainer: {
@@ -44,50 +48,102 @@ const styles = StyleSheet.create({
   return errors;
 } */
 
-const initialValues = {
-  origin: '',
-  destination: ''
+const LocationForm = ({ onSubmit }) => {
+  return (
+    <Formik
+      initialValues={{
+        origin: '',
+        destination: '',
+        date: moment(new Date()).format('YYYY-MM-DD'),
+        time: moment(new Date()).format('HH:mm:ss')
+      }}
+      onSubmit={values => onSubmit(values)}
+    >
+      {({ handleChange, handleBlur, handleSubmit, values, setFieldValue }) => (
+        <MyForm values={values} setFieldValue={setFieldValue} handleSubmit={handleSubmit} handleBlur={handleBlur} handleChange={handleChange} />
+      )}
+    </Formik>
+  );
 }
 
-const LocationForm = ({ onSubmit }) => {
-  const formik = useFormik({
-    initialValues,
-    onSubmit
-  });
+export const MyForm = (props) => {
+  const { handleChange, handleBlur, handleSubmit, values, setFieldValue } = props;
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [mode, setMode] = useState('date')
+
+  const showMode = (currentMode) => {
+    setDatePickerVisibility(true)
+    setMode(currentMode)
+  }
+  const showDatePicker = () => {
+    showMode('date')
+  };
+
+  const showTimePicker = () => {
+    showMode('time')
+  }
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleConfirm = (dateTime) => {
+    if(mode === 'date') {
+      setFieldValue('date', moment(dateTime).format('YYYY-MM-DD'))
+    }
+    if(mode === 'time') {
+      setFieldValue('time', moment(dateTime).format('HH:mm:ss'))
+    }
+    hideDatePicker();
+  };
 
   return (
     <SafeAreaView>
       <View style={styles.flexItemInput}>
-        <TextInput
-          style={styles.input}
-          onChangeText={formik.handleChange('origin')}
-          value={formik.values.origin}
-          placeholder="Enter origin"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={formik.handleChange('destination')}
-          value={formik.values.destination}
-          placeholder="Enter destination"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={formik.handleChange('date')}
-          value={formik.values.date}
-          placeholder="Enter date: YYYY-MM-DD (optional)"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={formik.handleChange('time')}
-          value={formik.values.time}
-          placeholder="Enter time: hh:mm:ss (optional)"
-        />
-        <Pressable onPress={formik.handleSubmit}>
-          <Text>Get itineraries</Text>
-        </Pressable>
+        <View>
+          <TextInput
+            style={styles.input}
+            onChangeText={handleChange('origin')}
+            onBlur={handleBlur('origin')}
+            value={values.origin}
+            placeholder='Enter origin'
+          />
+          <TextInput
+            style={styles.input}
+            onChangeText={handleChange('destination')}
+            onBlur={handleBlur('destination')}
+            value={values.destination}
+            placeholder='Enter destination'
+          />
+          <TextInput
+            style={styles.input}
+            onPress={showDatePicker}
+            placeholder='Enter date (YYYY-MM-DD)'
+            value={values.date}
+            onChangeText={handleChange('date')}
+            onBlur={handleBlur('date')}
+          />
+          <TextInput
+            style={styles.input}
+            onPress={showTimePicker}
+            placeholder='Enter time (HH:mm:ss)'
+            value={values.time}
+            onChangeText={handleChange('time')}
+            onBlur={handleBlur('time')}
+          />
+          <DateTimePickerModal
+            isVisible={isDatePickerVisible}
+            mode={mode}
+            onConfirm={handleConfirm}
+            onCancel={hideDatePicker}
+          />
+          <Pressable onPress={handleSubmit}>
+            <Text>Get itineraries</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
-  )
+  );
 }
 
 // use Geocoding API to search for addresses and coordinates
@@ -130,20 +186,24 @@ export function getItineraryTimeAndDuration (itinerary) {
   const startTime = new Date(itinerary[0].startTime)
   const endTime = new Date(itinerary[itinerary.length - 1].endTime)
   const duration = ((endTime - startTime) / 60000).toFixed()
-  return startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "-" +
-    endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (" +
-    duration + " min)"
+  const selectedDate = moment(startTime).format('DD.MM.')
+
+  return selectedDate + ' ' + moment(startTime).format('HH:mm') + '-' +
+    moment(endTime).format('HH:mm') + ' (' + duration + ' min)'
 }
 
 const DestinationSelect = ({ navigation }) => {
+  // useItineraries Context to save itineraries for the search query
+  const { itineraries, setItineraries } = useItineraries();
   // useLazyQuery to perform query later, not instantly
   const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_ITINERARY)
-  let itineraries = ''
+  let fetchedItineraries;
 
   // when form is submitted, coordinates of addresses are fetched and query is performed
   const onSubmit = async (values) => {
     const fetchedOriginCoordinates = await getCoordinates(values.origin);
     const fetchedDestinationCoordinates = await getCoordinates(values.destination);
+    console.log("VALUES", values)
 
     // place fetched coordinates into variables and perform the query
     try {
@@ -156,6 +216,11 @@ const DestinationSelect = ({ navigation }) => {
         }
       });
       console.log("Response for query:", response.data);
+      // add id to itineraries and save to context
+      fetchedItineraries = response.data.plan.itineraries.map((item, index) => (
+        { ...item, id: index + 1 }
+      ))
+      setItineraries(fetchedItineraries)
     } catch (error) {
       console.error("Error fetching itinerary:", error);
       if (error.graphQLErrors) {
@@ -169,15 +234,6 @@ const DestinationSelect = ({ navigation }) => {
     }
   }
 
-/*   function getItineraryTimeAndDuration (itinerary) {
-    const startTime = new Date(itinerary[0].startTime)
-    const endTime = new Date(itinerary[itinerary.length - 1].endTime)
-    const duration = ((endTime - startTime) / 60000).toFixed()
-    return startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "-" +
-      endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (" +
-      duration + " min)"
-  } */
-
   const Result = () => {
     if (loading) {
       return <Text>Loading...</Text>
@@ -189,14 +245,7 @@ const DestinationSelect = ({ navigation }) => {
       return null
     }
     if (data) {
-      /* itineraries = data.plan.itineraries.map(d =>
-        d.legs
-      ) */
-     // add id to itineraries
-      itineraries = data.plan.itineraries.map((item, index) => (
-        { ...item, id: index + 1 }
-      ))
-      console.log("itinearies:", itineraries)
+      console.log("itineraries in if data", itineraries)
     }
     return (
       <View>
@@ -204,19 +253,13 @@ const DestinationSelect = ({ navigation }) => {
         <FlatList
           style={styles.flexItemResult}
           data={itineraries}
-          //keyExtractor={(item, index) => String(index)}
           renderItem={({ item }) => (
             <View>
               <Text>------------</Text>
               <TouchableOpacity
                 style={styles.pressable}
                 onPress={() => navigation.navigate('ItineraryDetails', {
-                  data: item.legs,
-                  number: item.id
-                  // NOTE: save current query eg. in global store
-                  // don't send data with params
-                  // can be used to send itinerary id, starttime or something
-                  // for now just testing detailed screen with params
+                  itineraryId: item.id
                 })}
               >
                 <Text>
