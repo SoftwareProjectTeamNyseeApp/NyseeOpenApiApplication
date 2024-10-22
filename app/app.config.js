@@ -1,5 +1,3 @@
-import { processColor } from "react-native";
-
 export default {
   name: "app",
   slug: "app",
@@ -27,5 +25,5 @@ export default {
   extra: {
     api_name: process.env.API_NAME,
     api_key: process.env.API_KEY
-  },
+  }
 }
