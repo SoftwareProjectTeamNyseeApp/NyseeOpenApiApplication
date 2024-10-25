@@ -10,6 +10,7 @@ import DestinationSelect from './src/components/DestinationSelect';
 import ItineraryDetails from './src/components/ItineraryDetails';
 import Map from './src/components/Map';
 import Test from './src/components/Test';
+import VehicleInformation from './src/components/VehicleInformation';
 
 const Stack = createNativeStackNavigator();
 const apolloClient = createApolloClient();
@@ -31,9 +32,9 @@ export default function App() {
                 options={{ title: 'Itinerary Details' }}
               />
               <Stack.Screen
-                name="Test"
-                component={Test}
-                options={{ title: 'Test View' }}
+                name="VehicleInfo"
+                component={VehicleInformation}
+                options={{ title: 'VehicleInfoView' }}
               />
               <Stack.Screen
                 name="Map"
