@@ -88,18 +88,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 20,
     marginBottom: 10,
+    alignItems: 'center',
   },
   input: {
-    height: 50,
-    marginBottom: 20,
+    height: 20,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 10,
+    padding: 5,
     fontSize: 18,
   },
   getButton: {
     backgroundColor: 'blue',
-    padding: 15,
+    padding: 7,
     borderRadius: 5,
     alignItems: 'center',
   },

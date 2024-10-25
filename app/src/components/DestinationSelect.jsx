@@ -280,7 +280,10 @@ const DestinationSelect = ({ navigation }) => {
     <View style={styles.flexContainer}>
       <LocationForm onSubmit={onSubmit}/>
       <Result />
-      <Text onPress={() => navigation.navigate('VehicleInfo', {})}>Go to vehicle info</Text>
+      <Button
+        title="Go to Vehicle info"
+        onPress={() => navigation.navigate('VehicleInfo')}
+      />
       <Button
         title="Go to Map"
         onPress={() => navigation.navigate('Map')}
