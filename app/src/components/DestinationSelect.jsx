@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity, Button } from 'react-native';
 import { Formik } from 'formik';
 import { useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
@@ -281,6 +281,10 @@ const DestinationSelect = ({ navigation }) => {
       <LocationForm onSubmit={onSubmit}/>
       <Result />
       <Text onPress={() => navigation.navigate('Test', {})}>Go to Test</Text>
+      <Button
+        title="Go to Map"
+        onPress={() => navigation.navigate('Map')}
+      />
     </View>
   );
 }
