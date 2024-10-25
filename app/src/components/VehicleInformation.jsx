@@ -88,7 +88,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 20,
     marginBottom: 10,
-    alignItems: 'center',
   },
   input: {
     height: 20,
