@@ -8,6 +8,7 @@ import { ItineraryProvider } from './src/contexts/ItineraryContext';
 
 import DestinationSelect from './src/components/DestinationSelect';
 import ItineraryDetails from './src/components/ItineraryDetails';
+import Test from './src/components/Test';
 
 const Stack = createNativeStackNavigator();
 const apolloClient = createApolloClient();
@@ -25,6 +26,10 @@ export default function App() {
               <Stack.Screen
                 name="ItineraryDetails"
                 component={ItineraryDetails}
+              />
+              <Stack.Screen
+                name="Test"
+                component={Test}
               />
           </Stack.Navigator>
         </ApolloProvider>
