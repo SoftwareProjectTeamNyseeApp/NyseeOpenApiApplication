@@ -2,7 +2,24 @@ import React, { useState } from 'react';
 import { Text, View, Pressable, TextInput, SafeAreaView, StyleSheet, Modal, Button, ScrollView } from 'react-native';
 import Map from './Map'; // Import the Map component
 
-const VehicleActivity = ({ setVehicleLocation }) => {
+const formatTime = (dateTimeString) => {
+  if (!dateTimeString) return "N/A"; // Handle cases where time might be undefined
+  const timePart = dateTimeString.split('T')[1]; // Split by 'T' and take the time part
+  return timePart.split('Z')[0]; // Remove the 'Z' at the end
+};
+
+const getStopPointName = async (stopPointRef) => {
+  try {
+    const response = await fetch(stopPointRef);
+    const json = await response.json();
+    return json.body[0].name; // Assuming the response structure
+  } catch (error) {
+    console.error("Error fetching stop point details:", error);
+    return "Unknown Stop"; // Fallback name
+  }
+};
+
+const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
   const baseUrl = "https://data.itsfactory.fi/journeys/api/1";
   const [text, onChangeText] = useState('');
 
@@ -18,6 +35,24 @@ const VehicleActivity = ({ setVehicleLocation }) => {
           longitude: vehicleData.vehicleLocation.longitude,
           details: vehicleData, // Store vehicle details
         });
+
+        // Check if onwardsCalls exists and is an array
+        if (Array.isArray(vehicleData.onwardCalls)) {
+          const busInfo = vehicleData.onwardCalls;
+
+          // Fetch stop names for each stopPointRef
+          const stopsData = await Promise.all(busInfo.map(async (call) => {
+            const stopName = await getStopPointName(call.stopPointRef);
+            return {
+              stopName, // Use the fetched stop name
+              expectedArrivalTime: formatTime(call.expectedArrivalTime),
+              expectedDepartureTime: formatTime(call.expectedDepartureTime)
+            };
+          }));
+          setStopsData(stopsData); // Store stops data with names
+        } else {
+          setStopsData([]); // Set to empty array if onwardsCalls is not available
+        }
       }
     } catch (error) {
       console.error("Error fetching vehicle activity:", error);
@@ -42,6 +77,7 @@ const VehicleActivity = ({ setVehicleLocation }) => {
 
 const VehicleInformation = () => {
   const [vehicleLocation, setVehicleLocation] = useState(null);
+  const [stopsData, setStopsData] = useState([]); // New state for stops data
   const [isMenuVisible, setMenuVisible] = useState(false);
 
   const toggleMenu = () => {
@@ -50,7 +86,7 @@ const VehicleInformation = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <VehicleActivity setVehicleLocation={setVehicleLocation} />
+      <VehicleActivity setVehicleLocation={setVehicleLocation} setStopsData={setStopsData} />
       <Map vehicleLocation={vehicleLocation} />
 
       {/* Button to toggle the menu */}
@@ -69,9 +105,13 @@ const VehicleInformation = () => {
           <View style={styles.menuContent}>
             <Text style={styles.menuTitle}>Vehicle Details</Text>
             <ScrollView>
-              {vehicleLocation && vehicleLocation.details && (
-                <Text>{JSON.stringify(vehicleLocation.details, null, 2)}</Text>
-              )}
+              {stopsData.map((stop, index) => (
+                <View key={index} style={styles.stopItem}>
+                  <Text>Stop Name: {stop.stopName}</Text>
+                  <Text>Expected Arrival: {stop.expectedArrivalTime}</Text>
+                  <Text>Expected Departure: {stop.expectedDepartureTime}</Text>
+                </View>
+              ))}
             </ScrollView>
             <Button title="Close" onPress={toggleMenu} />
           </View>
@@ -132,6 +172,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+  stopItem: {
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
   },
 });
 
