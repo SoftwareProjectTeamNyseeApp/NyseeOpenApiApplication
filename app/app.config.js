@@ -24,6 +24,7 @@ export default {
   },
   extra: {
     api_name: process.env.API_NAME,
-    api_key: process.env.API_KEY
+    api_key: process.env.API_KEY,
+    waltti_api_credentials: process.env.WALTTI_API_CREDENTIALS,
   }
 }

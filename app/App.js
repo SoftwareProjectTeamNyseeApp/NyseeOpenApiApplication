@@ -41,6 +41,11 @@ export default function App() {
                 component={Map}
                 options={{ title: 'Map View' }}
               />
+              <Stack.Screen
+                name="Test"
+                component={Test}
+                options={{ title: 'Test View' }}
+              />
           </Stack.Navigator>
         </ApolloProvider>
       </NavigationContainer>

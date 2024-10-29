@@ -296,6 +296,10 @@ const DestinationSelect = ({ navigation }) => {
         title="Go to Map"
         onPress={() => navigation.navigate('Map')}
       />
+      <Button
+        title="Go to Test"
+        onPress={() => navigation.navigate('Test')}
+      />
     </View>
   );
 }

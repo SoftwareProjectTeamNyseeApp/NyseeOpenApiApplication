@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
-import { Text, StyleSheet, View, FlatList, Pressable, TextInput, SafeAreaView } from 'react-native';
+import { Button, Text, StyleSheet, View, FlatList, Pressable, TextInput, SafeAreaView } from 'react-native';
 import { useQuery } from '@apollo/client';
 import { GET_TEST_ITINERARY } from '../graphql/queries';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
 
 const styles = StyleSheet.create({
   container: {
@@ -139,10 +140,128 @@ const TestQuery = () => {
   );
 };
 
+const WalttiTest = () => {
+  // testing how to get data from Waltti API GTFS realtime
+  // Waltti Docs: https://dev.publictransport.tampere.fi/docs
+  // code referenced: https://gtfs.org/documentation/realtime/language-bindings/nodejs/
+
+  const credentials = btoa(Constants.expoConfig.extra.waltti_api_credentials)
+
+  async function getTripUpdates() {
+    const apiUrl = `https://data.waltti.fi/tampere/api/gtfsrealtime/v1.0/feed/tripupdate`
+    try {
+      const response = await fetch(apiUrl, {
+        headers: new Headers({
+          'Authorization': 'Basic ' +credentials,
+        })
+      });
+      if (!response.ok) {
+        const error = new Error(`${response.url}: ${response.status} ${response.statusText}`)
+        error.response = response
+        throw error;
+      }
+
+      const buffer = await response.arrayBuffer();
+      const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+        new Uint8Array(buffer)
+      );
+      feed.entity.forEach((entity) => {
+        if (entity.tripUpdate) {
+          console.log(entity.tripUpdate)
+        }
+      });
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  }
+
+  async function getVehiclePositions() {
+    const apiUrl = `https://data.waltti.fi/tampere/api/gtfsrealtime/v1.0/feed/vehicleposition`
+    try {
+      const response = await fetch(apiUrl, {
+        headers: new Headers({
+          'Authorization': 'Basic ' +credentials,
+        })
+      });
+      if (!response.ok) {
+        const error = new Error(`${response.url}: ${response.status} ${response.statusText}`)
+        error.response = response
+        throw error;
+      }
+
+      const buffer = await response.arrayBuffer();
+      const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+        new Uint8Array(buffer)
+      );
+      feed.entity.forEach((entity) => {
+        if (entity.vehicle) {
+          console.log(entity.vehicle)
+          /* if (entity.vehicle.vehicle.label === "Rahola") {
+            console.log("SPECIFIC VEHICLE")
+            console.log(entity.vehicle)
+          } */
+        }
+      });
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  }
+
+  async function getServiceAlerts() {
+    const apiUrl = `https://data.waltti.fi/tampere/api/gtfsrealtime/v1.0/feed/servicealert`
+    try {
+      const response = await fetch(apiUrl, {
+        headers: new Headers({
+          'Authorization': 'Basic ' +credentials,
+        })
+      });
+      if (!response.ok) {
+        const error = new Error(`${response.url}: ${response.status} ${response.statusText}`)
+        error.response = response
+        throw error;
+      }
+
+      const buffer = await response.arrayBuffer();
+      const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(
+        new Uint8Array(buffer)
+      );
+      feed.entity.forEach((entity) => {
+        if (entity.alert) {
+          console.log(entity.alert)
+        }
+      });
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text>Data is printed to console</Text>
+      <Button
+        title="Get Trip Updates"
+        onPress={() => getTripUpdates()}
+      />
+      <Button
+        title="Get Vehicle Positions"
+        onPress={() => getVehiclePositions()}
+      />
+      <Button
+        title="Get Service Alerts"
+        onPress={() => getServiceAlerts()}
+      />
+    </View>
+  )
+}
+
 const Test = () => {
   return (
     <View style={styles.container}>
-      <VehicleActivity />
+      {/* <VehicleActivity /> */}
+      <WalttiTest />
     </View>
   )
 }
