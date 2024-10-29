@@ -54,8 +54,8 @@ const Map = ({ vehicleLocation }) => {
           {vehicleLocation && (
             <Marker
               coordinate={{
-                latitude: vehicleLocation.latitude,
-                longitude: vehicleLocation.longitude,
+                latitude: parseFloat(vehicleLocation.latitude),
+                longitude: parseFloat(vehicleLocation.longitude),
               }}
               title="Vehicle Location"
             />
