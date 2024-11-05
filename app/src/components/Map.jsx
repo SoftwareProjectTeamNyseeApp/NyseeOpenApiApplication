@@ -8,6 +8,8 @@ const Map = ({ vehicleLocation }) => {
   const [errorMsg, setErrorMsg] = useState(null);
   const mapRef = useRef(null); // Create a ref for the MapView
 
+  console.log("VEHICLE LOCATION", vehicleLocation)
+
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -54,8 +56,8 @@ const Map = ({ vehicleLocation }) => {
           {vehicleLocation && (
             <Marker
               coordinate={{
-                latitude: parseFloat(vehicleLocation.latitude),
-                longitude: parseFloat(vehicleLocation.longitude),
+                latitude: vehicleLocation.latitude ? parseFloat(vehicleLocation.latitude) : 0,
+                longitude: vehicleLocation.longitude ? parseFloat(vehicleLocation.longitude): 0,
               }}
               title="Vehicle Location"
             />
