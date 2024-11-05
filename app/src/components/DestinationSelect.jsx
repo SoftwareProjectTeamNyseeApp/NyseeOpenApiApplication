@@ -105,6 +105,11 @@ export const MyForm = (props) => {
     hideDatePicker();
   };
 
+  const switchOriginAndDestination = () => {
+    setFieldValue('origin', values.destination)
+    setFieldValue('destination', values.origin)
+  }
+
   return (
     <SafeAreaView>
       <View style={styles.flexItemInput}>
@@ -123,6 +128,14 @@ export const MyForm = (props) => {
             value={values.destination}
             placeholder='Enter destination'
           />
+          <Pressable>
+            <Text
+              style={[styles.getButton, { width: 40, backgroundColor: "#fff", marginLeft: 15, textAlign: 'center' }]}
+              onPress={() => switchOriginAndDestination()}
+            >
+              🔀
+            </Text>
+          </Pressable>
           <TextInput
             style={styles.input}
             onPress={showDatePicker}
@@ -154,6 +167,45 @@ export const MyForm = (props) => {
   );
 }
 
+// WIP: connect with Formik
+// use Geocoding Autocomplete API to get address suggestions for input fields
+const getAutocompleteSuggestions = async (values) => {
+  const url = (
+    'http://api.digitransit.fi/geocoding/v1/autocomplete?' +
+    new URLSearchParams({ text: values })
+  )
+  console.log("URL", url)
+
+  const res = await fetch(url, {
+    headers: {
+      'Cache-control': 'no-cache',
+      'digitransit-subscription-key': Constants.expoConfig.extra.api_key
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('An error occurred');
+    }
+    return response.json();
+  })
+  .then(data => {
+    const features = data.features
+    // features.properties.label: place type eg. "stop", "venue", "address", "street"
+    // features.properties.postalcode
+    // features.properties.confidence
+    // features.properties.label: address <- for user
+    // features.properties.region
+    // -> could limit to Pirkanmaa only
+    const suggestedAddresses = features.map(f => f.properties.label)
+    console.log("suggested", suggestedAddresses)
+    return suggestedAddresses
+  })
+  .catch(error => {
+    console.error(error.message)
+  })
+  return res
+}
+
 // use Geocoding API to search for addresses and coordinates
 // get coordinates for one place
 // input address, eg. tamk and return lat and lon coordinates for it
@@ -177,7 +229,7 @@ const getCoordinates = async (values) => {
     return response.json();
   })
   .then(data => {
-    console.log(values, ':', data)
+    //console.log(values, ':', data)
     let coordinates = data.features[0].geometry.coordinates
     console.log(`coordinates for ${values}`, coordinates)
     return coordinates
@@ -191,13 +243,33 @@ const getCoordinates = async (values) => {
 }
 
 export function getItineraryTimeAndDuration (itinerary) {
-  const startTime = new Date(itinerary[0].startTime)
-  const endTime = new Date(itinerary[itinerary.length - 1].endTime)
-  const duration = ((endTime - startTime) / 60000).toFixed()
+  const startTime = new Date(itinerary.startTime)
+  const endTime = new Date(itinerary.endTime)
+  const duration = (itinerary.duration / 60).toFixed()
   const selectedDate = moment(startTime).format('DD.MM.')
 
   return selectedDate + ' ' + moment(startTime).format('HH:mm') + '-' +
     moment(endTime).format('HH:mm') + ' (' + duration + ' min)'
+}
+
+function getLines (itinerary) {
+  const legs = itinerary.legs
+  let lineNumbers = []
+  // if legs has a trip, save trip.routeShortName (line) to an array
+  for (let i = 0; i < legs.length; i++) {
+    if (legs[i].trip) {
+      lineNumbers.push(legs[i].trip.routeShortName)
+    }
+  }
+  if (lineNumbers.length === 1) {
+    return "Line: " + lineNumbers[0]
+  }
+  else if (lineNumbers.length > 1) {
+    return "Lines: " + lineNumbers.join(", ")
+  }
+  else {
+    return "No lines found"
+  }
 }
 
 const DestinationSelect = ({ navigation }) => {
@@ -222,7 +294,6 @@ const DestinationSelect = ({ navigation }) => {
           time: values.time
         }
       });
-      console.log("Response for query:", response.data);
       // add id to itineraries and save to context
       fetchedItineraries = response.data.plan.itineraries.map((item, index) => (
         { ...item, id: index + 1 }
@@ -252,7 +323,7 @@ const DestinationSelect = ({ navigation }) => {
       return null
     }
     if (data) {
-      console.log("itineraries in if data", itineraries)
+      //console.log("itineraries in if data", itineraries)
     }
     return (
       <View>
@@ -270,12 +341,18 @@ const DestinationSelect = ({ navigation }) => {
                 })}
               >
                 <Text>
-                  Time: {getItineraryTimeAndDuration(item.legs)}
+                  Time: {getItineraryTimeAndDuration(item)}
                 </Text>
                 <Text>
                   From stop: {item.legs[1].from.name} { }
                   ({item.legs[0].distance.toFixed()} m away)
                 </Text>
+                {
+                  <Text>
+                    {getLines(item)}
+                  </Text>
+                }
+
               </TouchableOpacity>
             </View>
           )}
