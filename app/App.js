@@ -3,12 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-import Test from './src/components/Test';
-import DestinationSelect from './src/components/DestinationSelect';
 import createApolloClient from './src/utils/apolloClient';
-import Constants from 'expo-constants';
-import TestQuery from './src/components/TestQuery';
+import { ItineraryProvider } from './src/contexts/ItineraryContext';
+
+import DestinationSelect from './src/components/DestinationSelect';
 import ItineraryDetails from './src/components/ItineraryDetails';
 
 const Stack = createNativeStackNavigator();
@@ -16,22 +14,22 @@ const apolloClient = createApolloClient();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <ApolloProvider client={apolloClient}>
-        <Stack.Navigator initialRouteName="DestinationSelect">
-{/*           <View style={styles.container}>
-            <Text>Hello Nysee!</Text>
-            <StatusBar style="auto" /> */}
-            {/* <DestinationSelect /> */}
-            {/* <Test /> */}
-            {/* <TestQuery /> */}
-            <Stack.Screen name="DestinationSelect" component={DestinationSelect} />
-            <Stack.Screen name="ItineraryDetails" component={ItineraryDetails} />
-          {/* </View> */}
-        </Stack.Navigator>
-
-      </ApolloProvider>
-    </NavigationContainer>
+    <ItineraryProvider>
+      <NavigationContainer>
+        <ApolloProvider client={apolloClient}>
+          <Stack.Navigator initialRouteName="DestinationSelect">
+              <Stack.Screen
+                name="DestinationSelect"
+                component={DestinationSelect}
+              />
+              <Stack.Screen
+                name="ItineraryDetails"
+                component={ItineraryDetails}
+              />
+          </Stack.Navigator>
+        </ApolloProvider>
+      </NavigationContainer>
+    </ItineraryProvider>
   );
 }
 

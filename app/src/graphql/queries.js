@@ -46,7 +46,7 @@ export const GET_ITINERARY = gql`
     plan(
       from: $from
       to: $to
-      numItineraries: 3
+      numItineraries: 5
       date: $date
       time: $time
     ) {
