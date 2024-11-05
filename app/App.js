@@ -8,6 +8,9 @@ import { ItineraryProvider } from './src/contexts/ItineraryContext';
 
 import DestinationSelect from './src/components/DestinationSelect';
 import ItineraryDetails from './src/components/ItineraryDetails';
+import Map from './src/components/Map';
+import Test from './src/components/Test';
+import VehicleInformation from './src/components/VehicleInformation';
 
 const Stack = createNativeStackNavigator();
 const apolloClient = createApolloClient();
@@ -21,10 +24,22 @@ export default function App() {
               <Stack.Screen
                 name="DestinationSelect"
                 component={DestinationSelect}
+                options={{ title: 'Select Destination' }}
               />
               <Stack.Screen
                 name="ItineraryDetails"
                 component={ItineraryDetails}
+                options={{ title: 'Itinerary Details' }}
+              />
+              <Stack.Screen
+                name="VehicleInfo"
+                component={VehicleInformation}
+                options={{ title: 'VehicleInfoView' }}
+              />
+              <Stack.Screen
+                name="Map"
+                component={Map}
+                options={{ title: 'Map View' }}
               />
           </Stack.Navigator>
         </ApolloProvider>

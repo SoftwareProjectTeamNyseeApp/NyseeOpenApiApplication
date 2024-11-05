@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity, Button } from 'react-native';
 import { Formik } from 'formik';
 import { useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
@@ -30,6 +30,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
     width: 300
+  },
+  getButton: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    backgroundColor: 'lightblue',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
   },
   pressable: {
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -138,7 +146,7 @@ export const MyForm = (props) => {
             onCancel={hideDatePicker}
           />
           <Pressable onPress={handleSubmit}>
-            <Text>Get itineraries</Text>
+            <Text style={styles.getButton}>Get itineraries</Text>
           </Pressable>
         </View>
       </View>
@@ -280,6 +288,14 @@ const DestinationSelect = ({ navigation }) => {
     <View style={styles.flexContainer}>
       <LocationForm onSubmit={onSubmit}/>
       <Result />
+      <Button
+        title="Go to Vehicle info"
+        onPress={() => navigation.navigate('VehicleInfo')}
+      />
+      <Button
+        title="Go to Map"
+        onPress={() => navigation.navigate('Map')}
+      />
     </View>
   );
 }
