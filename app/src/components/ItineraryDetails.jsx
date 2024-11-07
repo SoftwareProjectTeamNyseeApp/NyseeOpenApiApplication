@@ -48,26 +48,40 @@ function getIntermediatePlaces(legs) {
   )
 }
 
-async function getVehicleInformation(line) {
+async function getVehicleInformation({lines, directions}) {
+  // if multiple directions, should separate API calls eg. line 1 dir 1; line 3 dir 2
   const baseUrl = "https://data.itsfactory.fi/journeys/api/1";
-  const apiUrl = `${baseUrl}/vehicle-activity?lineRef=${line}`;
-  console.log("URL", apiUrl)
-    try {
-      const response = await fetch(apiUrl);
-      const json = await response.json();
-      console.log("RESPONSE", response)
-      //console.log("JSON", json)
-      if (json.body.length > 0) {
-        const vehicleData = json.body[0].monitoredVehicleJourney;
-        return ({
-          latitude: vehicleData.vehicleLocation.latitude,
-          longitude: vehicleData.vehicleLocation.longitude,
-          details: vehicleData, // Store vehicle details
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching vehicle activity:", error);
+  const apiUrl = `${baseUrl}/vehicle-activity?lineRef=${lines[0]}&directionRef=${directions[0]}`
+  // for multiple URLs
+/*   let apiUrl = []
+  for (let i = 0; i < directions.length; i++) {
+    apiUrl.push(`${baseUrl}/vehicle-activity?lineRef=${lines[i]}&directionRef=${directions[i]}`)
+  }
+  console.log("URL", apiUrl) */
+
+  // WIP: if multiple urls, make calls to all the urls at the same time
+  try {
+    const response = await fetch(apiUrl);
+    console.log("RESPONSE", response)
+    const json = await response.json();
+    //console.log("RESPONSE", response)
+    //console.log("JSON", json)
+    if (json.body.length > 0) {
+      // NOTE: currently saves multiple vehicles
+      // could limit in some way, eg. checking stop times, which ones are interesting to the user
+      const vehicleData = json.body.map((t) => {
+        return({
+          latitude: t.monitoredVehicleJourney.vehicleLocation.latitude,
+          longitude: t.monitoredVehicleJourney.vehicleLocation.longitude,
+          details: t.monitoredVehicleJourney
+        })
+      })
+      //console.log("VEHICLEDATA", vehicleData)
+      return vehicleData
     }
+  } catch (error) {
+    console.error("Error fetching vehicle activity:", error);
+  }
 }
 
 function getLines (itinerary) {
@@ -87,25 +101,65 @@ function getLines (itinerary) {
   }
 }
 
+function getDirections (itinerary) {
+  // NOTE: graphQL directionId is 0, 1 or null
+  // but in ITS API vehicle-activity directionRef is either 1 or 2
+  const legs = itinerary.legs
+  let directions = []
+  for (let i = 0; i < legs.length; i++) {
+    if (legs[i].trip) {
+      directions.push(parseInt(legs[i].trip.directionId) + 1)
+    }
+  }
+  if (directions.length > 0) {
+    return directions
+  }
+  else {
+    return null
+  }
+}
+
+function getJourneyGeometry (itinerary) {
+  const legs = itinerary.legs
+  let legsGeometry = []
+  // if legs has a legGeometry, save points into an array
+  for (let i = 0; i < legs.length; i++) {
+    if (legs[i].legGeometry) {
+      legsGeometry.push(legs[i].legGeometry.points)
+    }
+  }
+  if (legsGeometry.length > 0) {
+    return legsGeometry
+  }
+  else {
+    return null
+  }
+}
+
 const ItineraryDetails = ({ route }) => {
   const { itineraries } = useItineraries();
   const { itineraryId } = route.params;
   const selectedItinerary = itineraries.filter((itinerary) => itinerary.id === itineraryId)
   const [lines, setLines] = useState([])
+  const [directions, setDirections] = useState([])
   const [vehicleInformation, setVehicleInformation] = useState([])
+  const [journeyGeometry, setJourneyGeometry] = useState([])
 
   // get current lines
-  // could use vehicleRef or something to get the correct vehicles for the itinerary
+  // get geometry for the itinerary to pass it onto the map
   useEffect(() => {
     const fetchedLines = getLines(selectedItinerary[0])
+    const fetchedDirections = getDirections(selectedItinerary[0])
+    const fetchedGeometry = getJourneyGeometry(selectedItinerary[0])
     setLines(fetchedLines);
+    setDirections(fetchedDirections);
+    setJourneyGeometry(fetchedGeometry);
   }, [])
 
   useEffect(() => {
+    // TODO: does not immediately fetch, so marker takes a while to show up on the map
     const getCurrentVehicleInformation = async () => {
-      // NOTE: only fetches for first line
-      // TODO: allow multiple lines to be shown on map
-      const fetchedInformation = await getVehicleInformation(lines)
+      const fetchedInformation = await getVehicleInformation({lines, directions})
       setVehicleInformation(fetchedInformation);
     }
     if (lines.length > 0) {
@@ -114,13 +168,14 @@ const ItineraryDetails = ({ route }) => {
       // eg. clearInterval
       // maybe react query is better for polling than using setInterval
       setInterval(getCurrentVehicleInformation, 5000);
+      //getCurrentVehicleInformation()
     }
   }, [lines])
 
   return (
     <View style={styles.flexContainer}>
       <View style={styles.mapView}>
-        <Map vehicleLocation={vehicleInformation} />
+        <Map vehicleLocation={vehicleInformation} journeyGeometry={journeyGeometry} />
       </View>
       <Text>Itinerary {itineraryId}</Text>
       <Text>Time: {getItineraryTimeAndDuration(selectedItinerary[0])}</Text>

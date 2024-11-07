@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
+const polyline = require('@mapbox/polyline');
 
-const Map = ({ vehicleLocation }) => {
+const Map = ({ vehicleLocation, journeyGeometry }) => {
   const [region, setRegion] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const mapRef = useRef(null); // Create a ref for the MapView
-
-  console.log("VEHICLE LOCATION", vehicleLocation)
+  const [coords, setCoords] = useState([]); // array of Array<LatLng> for polylines for the map
+  //console.log("VEHICLE LOCATION", vehicleLocation)
 
   useEffect(() => {
     (async () => {
@@ -27,6 +28,30 @@ const Map = ({ vehicleLocation }) => {
       });
     })();
   }, []);
+
+  useEffect(() => {
+    // decode journeyGeometry into [latitude: Number, longitude: Number, ...]
+
+    // save each decoded string from array into points array
+    if (journeyGeometry) {
+      let points = []
+      for (i = 0; i < journeyGeometry.length; i++) {
+        points.push(polyline.decode(journeyGeometry[i]))
+      }
+      // make sure type is Array<LatLng>
+      let arrayOfCoordinates = []
+      for (i = 0; i < points.length; i++) {
+        arrayOfCoordinates.push(points[i].map((point) => {
+          return {
+            latitude: point[0],
+            longitude: point[1]
+          }
+        }))
+      }
+      // result is an Array of Array<LatLng>: [[Array<LatLng>], [Array<LatLng>], ...]
+      setCoords(arrayOfCoordinates)
+    }
+  }, [journeyGeometry])
 
   useEffect(() => {
     if (vehicleLocation && mapRef.current) {
@@ -53,15 +78,38 @@ const Map = ({ vehicleLocation }) => {
           region={region}
         >
           <Marker coordinate={region} title="You are here" />
-          {vehicleLocation && (
-            <Marker
+          {vehicleLocation && // for multiple markers
+            vehicleLocation.map((v, index) => (
+              <Marker
+              key={index}
+              pinColor={'blue'}
+              coordinate={{
+                latitude: v.latitude ? parseFloat(v.latitude) : 0,
+                longitude: v.longitude ? parseFloat(v.longitude): 0,
+              }}
+              title="Vehicle Location"
+            />
+            ))
+          }
+{/*             <Marker
               coordinate={{
                 latitude: vehicleLocation.latitude ? parseFloat(vehicleLocation.latitude) : 0,
                 longitude: vehicleLocation.longitude ? parseFloat(vehicleLocation.longitude): 0,
               }}
               title="Vehicle Location"
             />
-          )}
+          } */}
+          {coords.length > 0 &&
+            // draw a polyline for each separate leg for the journey
+            coords.map((c, index) => (
+              <Polyline
+                key={index}
+                coordinates={c}
+                strokeColor={"#000"}
+                strokeWidth={3}
+              />
+            ))
+          }
         </MapView>
       )}
     </View>

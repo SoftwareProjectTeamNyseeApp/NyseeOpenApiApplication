@@ -93,6 +93,7 @@ export const GET_ITINERARY = gql`
           trip {
             id
             gtfsId
+            directionId
             routeShortName
             tripHeadsign
             tripGeometry {
