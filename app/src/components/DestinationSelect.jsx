@@ -365,14 +365,6 @@ const DestinationSelect = ({ navigation }) => {
     <View style={styles.flexContainer}>
       <LocationForm onSubmit={onSubmit}/>
       <Result />
-      <Button
-        title="Go to Vehicle info"
-        onPress={() => navigation.navigate('VehicleInfo')}
-      />
-      <Button
-        title="Go to Map"
-        onPress={() => navigation.navigate('Map')}
-      />
     </View>
   );
 }

@@ -1,15 +1,15 @@
 import { ApolloProvider } from '@apollo/client';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import createApolloClient from './src/utils/apolloClient';
 import { ItineraryProvider } from './src/contexts/ItineraryContext';
 
+import Home from './src/components/Home'; // Import the Home component
 import DestinationSelect from './src/components/DestinationSelect';
 import ItineraryDetails from './src/components/ItineraryDetails';
 import Map from './src/components/Map';
-import Test from './src/components/Test';
 import VehicleInformation from './src/components/VehicleInformation';
 
 const Stack = createNativeStackNavigator();
@@ -20,7 +20,12 @@ export default function App() {
     <ItineraryProvider>
       <NavigationContainer>
         <ApolloProvider client={apolloClient}>
-          <Stack.Navigator initialRouteName="DestinationSelect">
+          <Stack.Navigator initialRouteName="Home">
+              <Stack.Screen
+                name="Home"
+                component={Home}
+                options={{ title: 'Home' }}
+              />
               <Stack.Screen
                 name="DestinationSelect"
                 component={DestinationSelect}
