@@ -29,16 +29,26 @@ const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
       const response = await fetch(apiUrl);
       const json = await response.json();
       if (json.body.length > 0) {
-        const vehicleData = json.body[0].monitoredVehicleJourney;
+      /*const vehicleData = json.body[0].monitoredVehicleJourney;
         setVehicleLocation({
           latitude: vehicleData.vehicleLocation.latitude,
           longitude: vehicleData.vehicleLocation.longitude,
           details: vehicleData, // Store vehicle details
-        });
+        }); */
+        // for displaying multiple vehicles in VehicleInfoView
+        const vehicleData = json.body.map(b => {
+          return({
+            latitude: b.monitoredVehicleJourney.vehicleLocation.latitude,
+            longitude: b.monitoredVehicleJourney.vehicleLocation.longitude,
+            details: b.monitoredVehicleJourney
+          })
+        })
+
+        setVehicleLocation(vehicleData)
 
         // Check if onwardsCalls exists and is an array
-        if (Array.isArray(vehicleData.onwardCalls)) {
-          const busInfo = vehicleData.onwardCalls;
+        if (Array.isArray(vehicleData[0].details.onwardCalls)) {
+          const busInfo = vehicleData[0].details.onwardCalls;
 
           // Fetch stop names for each stopPointRef
           const stopsData = await Promise.all(busInfo.map(async (call) => {
@@ -76,7 +86,7 @@ const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
 };
 
 const VehicleInformation = () => {
-  const [vehicleLocation, setVehicleLocation] = useState(null);
+  const [vehicleLocation, setVehicleLocation] = useState([]);
   const [stopsData, setStopsData] = useState([]); // New state for stops data
   const [isMenuVisible, setMenuVisible] = useState(false);
 

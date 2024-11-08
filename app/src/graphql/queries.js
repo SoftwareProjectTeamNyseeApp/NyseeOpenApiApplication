@@ -69,6 +69,8 @@ export const GET_ITINERARY = gql`
             stop {
               code
               name
+              lat
+              lon
             }
           },
           to {
@@ -79,6 +81,8 @@ export const GET_ITINERARY = gql`
             stop {
               code
               name
+              lat
+              lon
             }
           },
           duration

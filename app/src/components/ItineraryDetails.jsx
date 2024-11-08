@@ -49,39 +49,47 @@ function getIntermediatePlaces(legs) {
 }
 
 async function getVehicleInformation({lines, directions}) {
-  // if multiple directions, should separate API calls eg. line 1 dir 1; line 3 dir 2
   const baseUrl = "https://data.itsfactory.fi/journeys/api/1";
-  const apiUrl = `${baseUrl}/vehicle-activity?lineRef=${lines[0]}&directionRef=${directions[0]}`
+  //const apiUrl = `${baseUrl}/vehicle-activity?lineRef=${lines[0]}&directionRef=${directions[0]}`
   // for multiple URLs
-/*   let apiUrl = []
+  let apiUrl = []
   for (let i = 0; i < directions.length; i++) {
     apiUrl.push(`${baseUrl}/vehicle-activity?lineRef=${lines[i]}&directionRef=${directions[i]}`)
   }
-  console.log("URL", apiUrl) */
+  console.log("URL", apiUrl)
 
-  // WIP: if multiple urls, make calls to all the urls at the same time
-  try {
-    const response = await fetch(apiUrl);
-    console.log("RESPONSE", response)
-    const json = await response.json();
-    //console.log("RESPONSE", response)
-    //console.log("JSON", json)
-    if (json.body.length > 0) {
-      // NOTE: currently saves multiple vehicles
-      // could limit in some way, eg. checking stop times, which ones are interesting to the user
-      const vehicleData = json.body.map((t) => {
-        return({
-          latitude: t.monitoredVehicleJourney.vehicleLocation.latitude,
-          longitude: t.monitoredVehicleJourney.vehicleLocation.longitude,
-          details: t.monitoredVehicleJourney
-        })
-      })
-      //console.log("VEHICLEDATA", vehicleData)
-      return vehicleData
+  // fetch data from multiple URLs
+  const fetchUrls = async (urls) => {
+    try {
+      const promises = urls.map(url => fetch(url));
+      const responses = await Promise.all(promises);
+      const data = await Promise.all(responses.map(response => response.json()));
+      return data
+    } catch (error) {
+      throw new Error(`Failed to fetch data: ${error}`)
     }
-  } catch (error) {
-    console.error("Error fetching vehicle activity:", error);
   }
+
+  const vehicleData = fetchUrls(apiUrl)
+    .then(data => {
+      const dataFlat = data.flatMap(d => d.body)
+
+      if (dataFlat.length > 0) {
+        const tempVehicleData = dataFlat.map((d) => {
+          return({
+            latitude: d.monitoredVehicleJourney.vehicleLocation.latitude,
+            longitude: d.monitoredVehicleJourney.vehicleLocation.longitude,
+            details: d.monitoredVehicleJourney
+          })
+        })
+        return tempVehicleData
+      }
+    })
+    .catch(error => {
+      console.error("Error fetching data:", error)
+    });
+
+  return vehicleData
 }
 
 function getLines (itinerary) {
@@ -136,6 +144,37 @@ function getJourneyGeometry (itinerary) {
   }
 }
 
+function getStopCoordinates (itinerary) {
+  const legs = itinerary.legs
+  let stopCoordinates = []
+  // if stop coordinates exist in from, to, or intermediatePlaces, push into array
+  for (let i = 0; i < legs.length; i++) {
+    if (legs[i].from.stop) {
+      stopCoordinates.push({
+        latitude: legs[i].from.stop.lat,
+        longitude: legs[i].from.stop.lon
+      })
+    }
+    if (legs[i].intermediatePlaces.length > 0) {
+      const intermediatePlacesFlat = legs[i].intermediatePlaces.map(i => {
+        return({
+          latitude: i.stop.lat,
+          longitude: i.stop.lon
+        })
+      })
+      stopCoordinates.push(intermediatePlacesFlat)
+    }
+    if (legs[i].to.stop) {
+      stopCoordinates.push({
+        latitude: legs[i].to.stop.lat,
+        longitude: legs[i].to.stop.lon
+      })
+    }
+  }
+
+  return stopCoordinates.flat()
+}
+
 const ItineraryDetails = ({ route }) => {
   const { itineraries } = useItineraries();
   const { itineraryId } = route.params;
@@ -144,6 +183,7 @@ const ItineraryDetails = ({ route }) => {
   const [directions, setDirections] = useState([])
   const [vehicleInformation, setVehicleInformation] = useState([])
   const [journeyGeometry, setJourneyGeometry] = useState([])
+  const [stopCoordinates, setStopCoordinates] = useState([])
 
   // get current lines
   // get geometry for the itinerary to pass it onto the map
@@ -151,9 +191,11 @@ const ItineraryDetails = ({ route }) => {
     const fetchedLines = getLines(selectedItinerary[0])
     const fetchedDirections = getDirections(selectedItinerary[0])
     const fetchedGeometry = getJourneyGeometry(selectedItinerary[0])
+    const fetchedStopCoordinates = getStopCoordinates(selectedItinerary[0])
     setLines(fetchedLines);
     setDirections(fetchedDirections);
     setJourneyGeometry(fetchedGeometry);
+    setStopCoordinates(fetchedStopCoordinates);
   }, [])
 
   useEffect(() => {
@@ -175,7 +217,7 @@ const ItineraryDetails = ({ route }) => {
   return (
     <View style={styles.flexContainer}>
       <View style={styles.mapView}>
-        <Map vehicleLocation={vehicleInformation} journeyGeometry={journeyGeometry} />
+        <Map vehicleLocation={vehicleInformation} journeyGeometry={journeyGeometry} stopCoordinates={stopCoordinates} />
       </View>
       <Text>Itinerary {itineraryId}</Text>
       <Text>Time: {getItineraryTimeAndDuration(selectedItinerary[0])}</Text>

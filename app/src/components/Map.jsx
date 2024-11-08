@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Circle, Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 const polyline = require('@mapbox/polyline');
 
-const Map = ({ vehicleLocation, journeyGeometry }) => {
+const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
   const [region, setRegion] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const mapRef = useRef(null); // Create a ref for the MapView
@@ -81,24 +81,16 @@ const Map = ({ vehicleLocation, journeyGeometry }) => {
           {vehicleLocation && // for multiple markers
             vehicleLocation.map((v, index) => (
               <Marker
-              key={index}
-              pinColor={'blue'}
-              coordinate={{
-                latitude: v.latitude ? parseFloat(v.latitude) : 0,
-                longitude: v.longitude ? parseFloat(v.longitude): 0,
-              }}
-              title="Vehicle Location"
-            />
+                key={index}
+                pinColor={'blue'}
+                coordinate={{
+                  latitude: v.latitude ? parseFloat(v.latitude) : 0,
+                  longitude: v.longitude ? parseFloat(v.longitude): 0,
+                }}
+                title="Vehicle Location"
+              />
             ))
           }
-{/*             <Marker
-              coordinate={{
-                latitude: vehicleLocation.latitude ? parseFloat(vehicleLocation.latitude) : 0,
-                longitude: vehicleLocation.longitude ? parseFloat(vehicleLocation.longitude): 0,
-              }}
-              title="Vehicle Location"
-            />
-          } */}
           {coords.length > 0 &&
             // draw a polyline for each separate leg for the journey
             coords.map((c, index) => (
@@ -107,6 +99,19 @@ const Map = ({ vehicleLocation, journeyGeometry }) => {
                 coordinates={c}
                 strokeColor={"#000"}
                 strokeWidth={3}
+              />
+            ))
+          }
+          {stopCoordinates && stopCoordinates.length > 0 &&
+            // draw a circle for each stop
+            stopCoordinates.map((s, index) => (
+              <Circle
+                key={index}
+                center={s}
+                radius={10}
+                strokeWidth={5}
+                strokeColor={'red'}
+                fillColor={'rgba(255,0,0,0.7)'}
               />
             ))
           }
