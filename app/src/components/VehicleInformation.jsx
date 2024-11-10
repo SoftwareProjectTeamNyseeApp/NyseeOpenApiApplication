@@ -71,16 +71,18 @@ const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
 
   return (
     <SafeAreaView style={styles.activityContainer}>
-      <Text style={styles.label}>Vehicle line:</Text>
-      <TextInput
-        onChangeText={onChangeText}
-        value={text}
-        placeholder="line number, eg. 2"
-        style={styles.input}
-      />
-      <Pressable style={styles.getButton} onPress={() => getVehicleActivity(text)}>
-        <Text style={styles.buttonText}>Get</Text>
-      </Pressable>
+      <Text style={styles.label}>Input your wanted public transport line:</Text>
+      <View>
+        <TextInput
+          onChangeText={onChangeText}
+          value={text}
+          placeholder="line number, example 2"
+          style={styles.input}
+        />
+        <Pressable style={styles.getButton} onPress={() => getVehicleActivity(text)}>
+          <Text style={styles.buttonText}>Get</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -133,29 +135,33 @@ const VehicleInformation = () => {
 
 const styles = StyleSheet.create({
   activityContainer: {
+    backgroundColor: '#6495ed',
     padding: 20,
   },
   label: {
-    fontSize: 20,
+    alignItems: 'center',
+    fontSize: 22,
+    fontWeight: 'bold',
     marginBottom: 10,
   },
   input: {
-    height: 20,
+    height: 25,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#ccc',
     padding: 5,
     fontSize: 18,
+    backgroundColor: '#fff'
   },
   getButton: {
-    backgroundColor: 'blue',
-    padding: 7,
-    borderRadius: 5,
+    backgroundColor: '#536493',
+    padding: 5,
+    borderRadius: 3,
     alignItems: 'center',
   },
   buttonText: {
+    fontWeight: 'bold',
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
   },
   menuButton: {
     position: 'absolute',

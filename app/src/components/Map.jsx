@@ -55,13 +55,12 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
 
   useEffect(() => {
     if (vehicleLocation && mapRef.current) {
-      // Focus the map on the vehicle location
       mapRef.current.animateToRegion({
         latitude: vehicleLocation.latitude,
         longitude: vehicleLocation.longitude,
-        latitudeDelta: 0.005, // Adjust the zoom level as needed
+        latitudeDelta: 0.005,
         longitudeDelta: 0.005,
-      }, 1000); // Animation duration in milliseconds
+      }, 1000);
     }
   }, [vehicleLocation]);
 
@@ -73,9 +72,14 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
     <View style={styles.container}>
       {region && (
         <MapView
-          ref={mapRef} // Attach the ref to the MapView
+          ref={mapRef}
           style={styles.map}
           region={region}
+          showsBuildings={false}
+          showsTraffic={true}
+          showsCompass={true}
+          showsMyLocationButton={true}
+          showsIndoors={false}
         >
           <Marker coordinate={region} title="You are here" />
           {vehicleLocation && // for multiple markers
@@ -124,6 +128,7 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#6495ed',
   },
   map: {
     width: '100%',
