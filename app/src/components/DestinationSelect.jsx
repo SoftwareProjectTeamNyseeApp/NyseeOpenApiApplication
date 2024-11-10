@@ -139,22 +139,12 @@ export const MyForm = (props) => {
               🔀
             </Text>
           </Pressable>
-          <TextInput
-            style={styles.input}
-            onPress={showDatePicker}
-            placeholder='Enter date (YYYY-MM-DD)'
-            value={values.date}
-            onChangeText={handleChange('date')}
-            onBlur={handleBlur('date')}
-          />
-          <TextInput
-            style={styles.input}
-            onPress={showTimePicker}
-            placeholder='Enter time (HH:mm:ss)'
-            value={values.time}
-            onChangeText={handleChange('time')}
-            onBlur={handleBlur('time')}
-          />
+          <TouchableOpacity onPress={showDatePicker} style={styles.input}>
+            <Text>{values.date || 'Enter date (YYYY-MM-DD)'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={showTimePicker} style={styles.input}>
+            <Text>{values.time || 'Enter time (HH:mm:ss)'}</Text>
+          </TouchableOpacity>
           <DateTimePickerModal
             isVisible={isDatePickerVisible}
             mode={mode}
