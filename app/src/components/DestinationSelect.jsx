@@ -10,9 +10,12 @@ import moment from 'moment/moment';
 
 const styles = StyleSheet.create({
   flexContainer: {
+    flex:1,
+    backgroundColor: '#6495ed',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   flexItemInput: {
     flexGrow: 0,

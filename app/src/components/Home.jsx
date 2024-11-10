@@ -1,26 +1,20 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 
 const Home = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to the Nysee App</Text>
-      <View style={styles.navbar}>
-        <Button
-          style={styles.button}
-          title="Find Destination"
-          onPress={() => navigation.navigate('DestinationSelect')}
-        />
-        <Button
-          style={styles.button}
-          title="Vehicle Information"
-          onPress={() => navigation.navigate('VehicleInfo')}
-        />
-        <Button
-          style={styles.button}
-          title="Map"
-          onPress={() => navigation.navigate('Map')}
-        />
+      <View style={styles.buttonContainer}>
+        <Pressable style={styles.button} onPress={() => navigation.navigate('DestinationSelect')}>
+          <Text style={styles.text}>{"Find Destination"}</Text>
+        </Pressable>
+        <Pressable style={styles.button} onPress={() => navigation.navigate('VehicleInfo')}>
+          <Text style={styles.text}>{"Vehicle Information"}</Text>
+        </Pressable>
+        <Pressable style={styles.button} onPress={() => navigation.navigate('Map')}>
+          <Text style={styles.text}>{"Map"}</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -29,24 +23,36 @@ const Home = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#6495ed'
+  },
+  buttonContainer: {
+    paddingTop: 60,
   },
   title: {
-    fontSize: 24,
-    marginVertical: 20,
-  },
-  navbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    padding: 20,
-    backgroundColor: '#f8f8f8',
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
+    fontSize: 30,
+    fontWeight: 800,
+    lineHeight: 21,
+    fontWeight: 'bold',
+    paddingTop: 60,
+    marginBot: 100
   },
   button: {
-    backgroundColor: '#000',
+    backgroundColor: '#483d8b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 10,
+    elevation: 3,
+    marginVertical: 10,
+  },
+  text: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: 'bold',
+    letterSpacing: 0.25,
+    color: 'white',
   },
 });
 
