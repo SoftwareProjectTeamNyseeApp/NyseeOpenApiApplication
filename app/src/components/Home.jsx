@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 const Home = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to the Nysse App</Text>
+      <Text style={styles.title}>Welcome to the Nysee App</Text>
       <View style={styles.buttonContainer}>
         <Pressable style={styles.button} onPress={() => navigation.navigate('DestinationSelect')}>
           <Text style={styles.text}>{"Find Destination"}</Text>
