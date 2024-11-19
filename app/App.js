@@ -11,44 +11,48 @@ import DestinationSelect from './src/components/DestinationSelect';
 import ItineraryDetails from './src/components/ItineraryDetails';
 import Map from './src/components/Map';
 import VehicleInformation from './src/components/VehicleInformation';
+import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
+
 
 const Stack = createNativeStackNavigator();
 const apolloClient = createApolloClient();
 
 export default function App() {
   return (
-    <ItineraryProvider>
-      <NavigationContainer>
-        <ApolloProvider client={apolloClient}>
-          <Stack.Navigator initialRouteName="Home">
-              <Stack.Screen
-                name="Home"
-                component={Home}
-              />
-              <Stack.Screen
-                name="DestinationSelect"
-                component={DestinationSelect}
-                options={{ title: 'Select Destination' }}
-              />
-              <Stack.Screen
-                name="ItineraryDetails"
-                component={ItineraryDetails}
-                options={{ title: 'Itinerary Details' }}
-              />
-              <Stack.Screen
-                name="VehicleInfo"
-                component={VehicleInformation}
-                options={{ title: 'VehicleInfoView' }}
-              />
-              <Stack.Screen
-                name="Map"
-                component={Map}
-                options={{ title: 'Map View' }}
-              />
-          </Stack.Navigator>
-        </ApolloProvider>
-      </NavigationContainer>
-    </ItineraryProvider>
+    <AutocompleteDropdownContextProvider>
+      <ItineraryProvider>
+        <NavigationContainer>
+          <ApolloProvider client={apolloClient}>
+            <Stack.Navigator initialRouteName="Home">
+                <Stack.Screen
+                  name="Home"
+                  component={Home}
+                />
+                <Stack.Screen
+                  name="DestinationSelect"
+                  component={DestinationSelect}
+                  options={{ title: 'Select Destination' }}
+                />
+                <Stack.Screen
+                  name="ItineraryDetails"
+                  component={ItineraryDetails}
+                  options={{ title: 'Itinerary Details' }}
+                />
+                <Stack.Screen
+                  name="VehicleInfo"
+                  component={VehicleInformation}
+                  options={{ title: 'VehicleInfoView' }}
+                />
+                <Stack.Screen
+                  name="Map"
+                  component={Map}
+                  options={{ title: 'Map View' }}
+                />
+            </Stack.Navigator>
+          </ApolloProvider>
+        </NavigationContainer>
+      </ItineraryProvider>
+    </AutocompleteDropdownContextProvider>
   );
 }
 

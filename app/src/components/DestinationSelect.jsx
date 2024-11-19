@@ -1,12 +1,14 @@
 import Constants from 'expo-constants';
-import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity, Button } from 'react-native';
-import { Formik } from 'formik';
+import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity, Button, Dimensions, Platform } from 'react-native';
+import { Field, Formik } from 'formik';
 import { useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
 import { useItineraries } from '../contexts/ItineraryContext';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { useState } from 'react';
 import moment from 'moment/moment';
+import React, { memo, useCallback, useRef, useState, useEffect, useMemo } from 'react'
+import { AutocompleteDropdown } from 'react-native-autocomplete-dropdown';
+import * as Location from 'expo-location';
 
 const styles = StyleSheet.create({
   flexContainer: {
@@ -44,7 +46,7 @@ const styles = StyleSheet.create({
   },
   pressable: {
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  }
+  },
 });
 
 // TODO: add validation to form
@@ -58,6 +60,7 @@ const styles = StyleSheet.create({
   }
   return errors;
 } */
+
 
 const LocationForm = ({ onSubmit }) => {
   return (
@@ -81,6 +84,8 @@ export const MyForm = (props) => {
   const { handleChange, handleBlur, handleSubmit, values, setFieldValue } = props;
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [mode, setMode] = useState('date')
+
+  console.log("VALUES IN FORM", values)
 
   const showMode = (currentMode) => {
     setDatePickerVisibility(true)
@@ -111,24 +116,45 @@ export const MyForm = (props) => {
   const switchOriginAndDestination = () => {
     setFieldValue('origin', values.destination)
     setFieldValue('destination', values.origin)
+    console.log("CHANGED DESTINATION", values.origin)
+  }
+
+  const handleSelectedItemForOrigin = (childData) => {
+    setFieldValue('origin', childData)
+  }
+
+  const handleSelectedItemForDestination = (childData) => {
+    setFieldValue('destination', childData)
   }
 
   return (
     <SafeAreaView>
       <View style={styles.flexItemInput}>
         <View>
-          <TextInput
+          {/* <TextInput
             style={styles.input}
             onChangeText={handleChange('origin')}
             onBlur={handleBlur('origin')}
             value={values.origin}
             placeholder='Enter origin'
+          /> */}
+          <SuggestionDropDown
+            sendDataToForm={handleSelectedItemForOrigin}
+            value={values.origin}
+            onBlur={handleBlur('origin')}
+            placeholder='Enter origin'
           />
-          <TextInput
+          {/* <TextInput
             style={styles.input}
             onChangeText={handleChange('destination')}
             onBlur={handleBlur('destination')}
             value={values.destination}
+            placeholder='Enter destination'
+          /> */}
+          <SuggestionDropDown
+            sendDataToForm={handleSelectedItemForDestination}
+            value={values.destination}
+            onBlur={handleBlur('destination')}
             placeholder='Enter destination'
           />
           <Pressable>
@@ -165,7 +191,9 @@ export const MyForm = (props) => {
 const getAutocompleteSuggestions = async (values) => {
   const url = (
     'http://api.digitransit.fi/geocoding/v1/autocomplete?' +
-    new URLSearchParams({ text: values })
+    new URLSearchParams({ text: values }) +
+    // added bounding box to limit results around Tampere
+    '&boundary.rect.min_lat=61.38&boundary.rect.max_lat=61.58&boundary.rect.min_lon=23.51&boundary.rect.max_lon=23.99'
   )
   console.log("URL", url)
 
@@ -183,14 +211,21 @@ const getAutocompleteSuggestions = async (values) => {
   })
   .then(data => {
     const features = data.features
-    // features.properties.label: place type eg. "stop", "venue", "address", "street"
+    // features.properties.layer: place type eg. "stop", "venue", "address", "street"
     // features.properties.postalcode
     // features.properties.confidence
     // features.properties.label: address <- for user
     // features.properties.region
     // -> could limit to Pirkanmaa only
-    const suggestedAddresses = features.map(f => f.properties.label)
-    console.log("suggested", suggestedAddresses)
+    const suggestedAddresses = features.map(f => {
+      return({
+        id: f.properties.id,
+        title: f.properties.label,
+        coordinates: f.geometry.coordinates,
+        layer: f.properties.layer, // street, address
+      })
+    })
+    //console.log("suggested", suggestedAddresses)
     return suggestedAddresses
   })
   .catch(error => {
@@ -223,8 +258,9 @@ const getCoordinates = async (values) => {
   })
   .then(data => {
     //console.log(values, ':', data)
-    let coordinates = data.features[0].geometry.coordinates
+    let coordinates = data.features[0].geometry.coordinates // [lon, lat]
     console.log(`coordinates for ${values}`, coordinates)
+    coordinates = coordinates.reverse() // make sure latitude is first
     return coordinates
   })
   .catch(error => {
@@ -265,6 +301,157 @@ function getLines (itinerary) {
   }
 }
 
+// only works if app is active and this file is saved afterwards
+// make user location context?
+const getUserLocationAsSuggestion = () => {
+  const [userCoordinates, setUserCoordinates] = useState(null);
+  let location = ''
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+
+      location = await Location.getCurrentPositionAsync({});
+      setUserCoordinates({
+        id: "userlocation",
+        title: "Use My Location",
+        coordinates: [location.coords.latitude, location.coords.longitude]
+      });
+    })();
+  }, []);
+
+  useEffect(() => {
+    console.log("USER COORDS", userCoordinates)
+  }, [userCoordinates])
+
+  return userCoordinates
+}
+
+export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
+  const userLocation = getUserLocationAsSuggestion()
+  const [loading, setLoading] = useState(false)
+  const [suggestionsList, setSuggestionsList] = useState(null)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const dropdownController = useRef(null)
+
+  const searchRef = useRef(null)
+
+  //console.log("SELECTED ITEM", selectedItem)
+
+  // send the selected item or input to form
+  const handleSelectedItem = (item) => {
+    if (item) {
+      sendDataToForm(item)
+    }
+  }
+
+  const getSuggestions = useCallback(async q => {
+    console.log("userlocation", userLocation)
+    const filterToken = q.toLowerCase()
+    console.log('getSuggestions', q)
+    if (typeof q !== 'string' || q.length < 1) {
+      setSuggestionsList(null)
+      return
+    }
+    setLoading(true)
+    const items = await getAutocompleteSuggestions(q)
+
+    const suggestions = items
+      .filter(item => item.title.toLowerCase().includes(filterToken))
+      .map(item => ({
+        id: item.id,
+        title: item.title,
+        coordinates: [item.coordinates[1], item.coordinates[0]]
+    }))
+    // add userLocation as an option if exists
+    if (userLocation) {
+      suggestions.unshift({
+        id: userLocation.id,
+        title: userLocation.title,
+        coordinates: userLocation.coordinates
+      })
+    }
+    //console.log("SUGGESTIONS", suggestions)
+    setSuggestionsList(suggestions)
+    setLoading(false)
+    }, [])
+
+    const onClearPress = useCallback(() => {
+      setSuggestionsList(null)
+    }, [])
+
+    const onOpenSuggestionsList = useCallback(isOpened => {}, [])
+
+    return (
+      <>
+        <View
+          /* style={[
+            { flex: 1, flexDirection: 'row', alignItems: 'center' },
+            Platform.select({ ios: { zIndex: 1 } }),
+          ]} */>
+          <AutocompleteDropdown
+            ref={searchRef}
+            controller={controller => {
+              dropdownController.current = controller
+            }}
+            direction={Platform.select({ ios: 'down' })}
+            dataSet={suggestionsList}
+            onChangeText={getSuggestions}
+            onSelectItem={item => {
+              item && setSelectedItem(item)
+              handleSelectedItem(item)
+            }}
+            debounce={600}
+            suggestionsListMaxHeight={Dimensions.get('window').height * 0.4}
+            onClear={onClearPress}
+            clearOnFocus={false}
+            //closeOnSubmit={true}
+            // if user presses submit on keyboard instead of choosing a suggestion, send typed input to form
+            onSubmit={(e) => handleSelectedItem(e.nativeEvent.text)}
+            onOpenSuggestionsList={onOpenSuggestionsList}
+            loading={loading}
+            useFilter={false} // set false to prevent rerender twice
+            textInputProps={{
+              placeholder: placeholder,
+              autoCorrect: false,
+              autoCapitalize: 'none',
+              style: {
+                borderRadius: 25,
+                backgroundColor: '#fff',
+                color: '#000',
+                paddingLeft: 18,
+              },
+            }}
+            rightButtonsContainerStyle={{
+              right: 8,
+              height: 30,
+              alignSelf: 'center',
+            }}
+            inputContainerStyle={{
+              backgroundColor: '#fff',
+              borderRadius: 10,
+            }}
+            suggestionsListContainerStyle={{
+              backgroundColor: '#fff',
+            }}
+            //containerStyle={{ flexGrow: 1, flexShrink: 1 }}
+            renderItem={(item, text) => <Text style={{ color: '#000', padding: 15 }}>{item.title}</Text>}
+            inputHeight={50}
+            showChevron={true}
+            closeOnBlur={false}
+          />
+          {/* <View style={{ width: 10 }} /> */}
+          {/* <Button style={{ flexGrow: 0 }} title="Toggle" onPress={() => dropdownController.current.toggle()} /> */}
+        </View>
+      </>
+    )
+  }
+)
+
 const DestinationSelect = ({ navigation }) => {
   // useItineraries Context to save itineraries for the search query
   const { itineraries, setItineraries } = useItineraries();
@@ -274,15 +461,31 @@ const DestinationSelect = ({ navigation }) => {
 
   // when form is submitted, coordinates of addresses are fetched and query is performed
   const onSubmit = async (values) => {
-    const fetchedOriginCoordinates = await getCoordinates(values.origin);
-    const fetchedDestinationCoordinates = await getCoordinates(values.destination);
+    let fetchedOriginCoordinates = ''
+    let fetchedDestinationCoordinates = ''
+
+    // if the address is selected from suggestions, it already has coordinates resolved
+    if (values.origin.coordinates) {
+      fetchedOriginCoordinates = values.origin.coordinates;
+    } else {
+      fetchedOriginCoordinates = await getCoordinates(values.origin);
+    }
+
+    if (values.destination.coordinates) {
+      fetchedDestinationCoordinates = values.destination.coordinates;
+    } else {
+      fetchedDestinationCoordinates = await getCoordinates(values.destination);
+    }
+
+    console.log("fetched origin", fetchedOriginCoordinates)
+    console.log("fetched destination", fetchedDestinationCoordinates)
 
     // place fetched coordinates into variables and perform the query
     try {
       const response = await getCustomItinerary({
         variables: {
-          from: { lat: fetchedOriginCoordinates[1], lon: fetchedOriginCoordinates[0] },
-          to: { lat: fetchedDestinationCoordinates[1], lon: fetchedDestinationCoordinates[0] },
+          from: { lat: fetchedOriginCoordinates[0], lon: fetchedOriginCoordinates[1] },
+          to: { lat: fetchedDestinationCoordinates[0], lon: fetchedDestinationCoordinates[1] },
           date: values.date,
           time: values.time
         }
@@ -337,7 +540,7 @@ const DestinationSelect = ({ navigation }) => {
                   Time: {getItineraryTimeAndDuration(item)}
                 </Text>
                 <Text>
-                  From stop: {item.legs[1].from.name} { }
+                  From stop: {item.legs[1]?.from.name} { }
                   ({item.legs[0].distance.toFixed()} m away)
                 </Text>
                 {
@@ -345,7 +548,6 @@ const DestinationSelect = ({ navigation }) => {
                     {getLines(item)}
                   </Text>
                 }
-
               </TouchableOpacity>
             </View>
           )}
