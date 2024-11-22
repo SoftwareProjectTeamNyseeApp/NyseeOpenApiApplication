@@ -204,7 +204,7 @@ const ItineraryDetails = ({ route }) => {
       const fetchedInformation = await getVehicleInformation({lines, directions})
       setVehicleInformation(fetchedInformation);
     }
-    if (lines.length > 0) {
+    if (lines?.length > 0) {
       // polling API every 5 seconds
       // NOTE: should somehow clear this so it doesn't keep polling when user changes itineraries
       // eg. clearInterval
