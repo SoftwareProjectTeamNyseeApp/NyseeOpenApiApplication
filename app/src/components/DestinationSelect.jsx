@@ -131,31 +131,19 @@ export const MyForm = (props) => {
     <SafeAreaView>
       <View style={styles.flexItemInput}>
         <View>
-          {/* <TextInput
-            style={styles.input}
-            onChangeText={handleChange('origin')}
-            onBlur={handleBlur('origin')}
-            value={values.origin}
-            placeholder='Enter origin'
-          /> */}
           <SuggestionDropDown
             sendDataToForm={handleSelectedItemForOrigin}
             value={values.origin}
             onBlur={handleBlur('origin')}
             placeholder='Enter origin'
+            handleChange={handleChange('origin')}
           />
-          {/* <TextInput
-            style={styles.input}
-            onChangeText={handleChange('destination')}
-            onBlur={handleBlur('destination')}
-            value={values.destination}
-            placeholder='Enter destination'
-          /> */}
           <SuggestionDropDown
             sendDataToForm={handleSelectedItemForDestination}
             value={values.destination}
             onBlur={handleBlur('destination')}
             placeholder='Enter destination'
+            handleChange={handleChange('destination')}
           />
           <Pressable>
             <Text
@@ -195,7 +183,6 @@ const getAutocompleteSuggestions = async (values) => {
     // added bounding box to limit results around Tampere
     '&boundary.rect.min_lat=61.38&boundary.rect.max_lat=61.58&boundary.rect.min_lon=23.51&boundary.rect.max_lon=23.99'
   )
-  console.log("URL", url)
 
   const res = await fetch(url, {
     headers: {
@@ -352,7 +339,6 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
   const getSuggestions = useCallback(async q => {
     console.log("userlocation", userLocation)
     const filterToken = q.toLowerCase()
-    console.log('getSuggestions', q)
     if (typeof q !== 'string' || q.length < 1) {
       setSuggestionsList(null)
       return
@@ -540,8 +526,16 @@ const DestinationSelect = ({ navigation }) => {
                   Time: {getItineraryTimeAndDuration(item)}
                 </Text>
                 <Text>
-                  From stop: {item.legs[1]?.from.name} { }
-                  ({item.legs[0].distance.toFixed()} m away)
+                  From stop: {item.legs[0]?.from.name !== 'Origin' ? (
+                    item.legs[0]?.from.name
+                   ) : (
+                    item.legs[1]?.from.name
+                   )} { }
+                  ({item.legs[0].mode === "WALK" ? (
+                    item.legs[0].distance.toFixed()
+                  ) : (
+                    0
+                  )} m away)
                 </Text>
                 {
                   <Text>

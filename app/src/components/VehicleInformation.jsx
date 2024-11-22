@@ -40,6 +40,7 @@ const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
           return({
             latitude: b.monitoredVehicleJourney.vehicleLocation.latitude,
             longitude: b.monitoredVehicleJourney.vehicleLocation.longitude,
+            line: b.monitoredVehicleJourney.lineRef,
             details: b.monitoredVehicleJourney
           })
         })
