@@ -56,7 +56,7 @@ async function getVehicleInformation({lines, directions}) {
   for (let i = 0; i < directions.length; i++) {
     apiUrl.push(`${baseUrl}/vehicle-activity?lineRef=${lines[i]}&directionRef=${directions[i]}`)
   }
-  console.log("URL", apiUrl)
+  //console.log("URL", apiUrl)
 
   // fetch data from multiple URLs
   const fetchUrls = async (urls) => {
@@ -79,6 +79,7 @@ async function getVehicleInformation({lines, directions}) {
           return({
             latitude: d.monitoredVehicleJourney.vehicleLocation.latitude,
             longitude: d.monitoredVehicleJourney.vehicleLocation.longitude,
+            line: d.monitoredVehicleJourney.lineRef,
             details: d.monitoredVehicleJourney
           })
         })
@@ -171,8 +172,23 @@ function getStopCoordinates (itinerary) {
       })
     }
   }
-
   return stopCoordinates.flat()
+}
+
+function getLegModes (itinerary) {
+  const legs = itinerary.legs
+  let legModes = []
+  for (let i = 0; i < legs.length; i++) {
+    if (legs[i].mode) {
+      legModes.push(legs[i].mode)
+    }
+  }
+  if (legModes.length > 0) {
+    return legModes
+  }
+  else {
+    return null
+  }
 }
 
 const ItineraryDetails = ({ route }) => {
@@ -184,6 +200,7 @@ const ItineraryDetails = ({ route }) => {
   const [vehicleInformation, setVehicleInformation] = useState([])
   const [journeyGeometry, setJourneyGeometry] = useState([])
   const [stopCoordinates, setStopCoordinates] = useState([])
+  const [legModes, setLegModes] = useState([])
 
   // get current lines
   // get geometry for the itinerary to pass it onto the map
@@ -192,10 +209,12 @@ const ItineraryDetails = ({ route }) => {
     const fetchedDirections = getDirections(selectedItinerary[0])
     const fetchedGeometry = getJourneyGeometry(selectedItinerary[0])
     const fetchedStopCoordinates = getStopCoordinates(selectedItinerary[0])
+    const fetchedLegModes = getLegModes(selectedItinerary[0])
     setLines(fetchedLines);
     setDirections(fetchedDirections);
     setJourneyGeometry(fetchedGeometry);
     setStopCoordinates(fetchedStopCoordinates);
+    setLegModes(fetchedLegModes);
   }, [])
 
   useEffect(() => {
@@ -209,7 +228,7 @@ const ItineraryDetails = ({ route }) => {
       // NOTE: should somehow clear this so it doesn't keep polling when user changes itineraries
       // eg. clearInterval
       // maybe react query is better for polling than using setInterval
-      setInterval(getCurrentVehicleInformation, 5000);
+      setInterval(getCurrentVehicleInformation, 2000);
       //getCurrentVehicleInformation()
     }
   }, [lines])
@@ -217,7 +236,7 @@ const ItineraryDetails = ({ route }) => {
   return (
     <View style={styles.flexContainer}>
       <View style={styles.mapView}>
-        <Map vehicleLocation={vehicleInformation} journeyGeometry={journeyGeometry} stopCoordinates={stopCoordinates} />
+        <Map vehicleLocation={vehicleInformation} journeyGeometry={journeyGeometry} stopCoordinates={stopCoordinates} legModes={legModes} />
       </View>
       <Text>Itinerary {itineraryId}</Text>
       <Text>Time: {getItineraryTimeAndDuration(selectedItinerary[0])}</Text>

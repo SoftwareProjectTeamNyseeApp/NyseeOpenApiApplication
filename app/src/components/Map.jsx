@@ -4,12 +4,12 @@ import MapView, { Circle, Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 const polyline = require('@mapbox/polyline');
 
-const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
+const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates, legModes }) => {
   const [region, setRegion] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const mapRef = useRef(null); // Create a ref for the MapView
   const [coords, setCoords] = useState([]); // array of Array<LatLng> for polylines for the map
-  //console.log("VEHICLE LOCATION", vehicleLocation)
+  const [polylineStyles, setPolylineStyles] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -29,9 +29,8 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
     })();
   }, []);
 
+  // decode journeyGeometry into [latitude: Number, longitude: Number, ...]
   useEffect(() => {
-    // decode journeyGeometry into [latitude: Number, longitude: Number, ...]
-
     // save each decoded string from array into points array
     if (journeyGeometry) {
       let points = []
@@ -52,6 +51,34 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
       setCoords(arrayOfCoordinates)
     }
   }, [journeyGeometry])
+
+  // change polyline style in map depending on leg mode
+  useEffect(() => {
+    if (legModes) {
+      let styles = []
+      for (i = 0; i < legModes.length; i++) {
+        if (legModes[i] === "WALK") {
+          styles.push({
+            color: 'rgba(0,0,0,0.8)',
+            dashPattern: [5, 5]
+          })
+        }
+        if (legModes[i] === "BUS") {
+          styles.push({
+            color: 'rgba(0,100,255,1)',
+            dashPattern: null
+          })
+        }
+        if (legModes[i] === "TRAM") {
+          styles.push({
+            color: 'rgba(255,0,0,1)',
+            dashPattern: null
+          })
+        }
+      }
+      setPolylineStyles(styles)
+    }
+  }, [legModes])
 
   useEffect(() => {
     if (vehicleLocation && mapRef.current) {
@@ -91,8 +118,12 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
                   latitude: v.latitude ? parseFloat(v.latitude) : 0,
                   longitude: v.longitude ? parseFloat(v.longitude): 0,
                 }}
-                title="Vehicle Location"
-              />
+                title={v.line}
+              >
+                <View style={[styles.lineMarker, v.line === "1" || v.line === "3" ? styles.tramColor : styles.busColor]}>
+                  <Text style={{fontWeight: "bold", color: "white"}}>{v.line}</Text>
+                </View>
+              </Marker>
             ))
           }
           {coords.length > 0 &&
@@ -101,8 +132,9 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
               <Polyline
                 key={index}
                 coordinates={c}
-                strokeColor={"#000"}
-                strokeWidth={3}
+                strokeColor={polylineStyles[index].color}
+                strokeWidth={4}
+                lineDashPattern={polylineStyles[index].dashPattern}
               />
             ))
           }
@@ -114,8 +146,8 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates }) => {
                 center={s}
                 radius={10}
                 strokeWidth={5}
-                strokeColor={'red'}
-                fillColor={'rgba(255,0,0,0.7)'}
+                strokeColor={'rgba(60,60,60,0.8)'}
+                fillColor={'rgba(201,0,201,0.5)'}
               />
             ))
           }
@@ -134,6 +166,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  lineMarker: {
+    borderRadius: 12,
+    height: 25,
+    width: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1
+  },
+  tramColor: {
+    backgroundColor: 'rgba(255,0,0,1)'
+  },
+  busColor: {
+    backgroundColor: 'rgba(0,100,255,1)'
+  }
 });
 
 export default Map;
