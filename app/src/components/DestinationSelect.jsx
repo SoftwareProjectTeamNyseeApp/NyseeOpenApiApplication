@@ -1,14 +1,15 @@
 import Constants from 'expo-constants';
-import { Text, StyleSheet, View, FlatList, SafeAreaView, TextInput, Pressable, TouchableOpacity, Button, Dimensions, Platform } from 'react-native';
-import { Field, Formik } from 'formik';
+import { Text, StyleSheet, View, FlatList, SafeAreaView, Pressable, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { Formik } from 'formik';
 import { useLazyQuery } from '@apollo/client';
 import { GET_ITINERARY } from '../graphql/queries';
 import { useItineraries } from '../contexts/ItineraryContext';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment/moment';
-import React, { memo, useCallback, useRef, useState, useEffect, useMemo } from 'react'
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { AutocompleteDropdown } from 'react-native-autocomplete-dropdown';
-import * as Location from 'expo-location';
+import { useUserLocation } from '../contexts/UserLocationContext';
+import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
 
 const styles = StyleSheet.create({
   flexContainer: {
@@ -288,46 +289,13 @@ function getLines (itinerary) {
   }
 }
 
-// only works if app is active and this file is saved afterwards
-// make user location context?
-const getUserLocationAsSuggestion = () => {
-  const [userCoordinates, setUserCoordinates] = useState(null);
-  let location = ''
-
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        return;
-      }
-
-      location = await Location.getCurrentPositionAsync({});
-      setUserCoordinates({
-        id: "userlocation",
-        title: "Use My Location",
-        coordinates: [location.coords.latitude, location.coords.longitude]
-      });
-    })();
-  }, []);
-
-  useEffect(() => {
-    console.log("USER COORDS", userCoordinates)
-  }, [userCoordinates])
-
-  return userCoordinates
-}
-
 export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
-  const userLocation = getUserLocationAsSuggestion()
+  const { userCoordinates } = useUserLocation();
   const [loading, setLoading] = useState(false)
   const [suggestionsList, setSuggestionsList] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
   const dropdownController = useRef(null)
-
   const searchRef = useRef(null)
-
-  //console.log("SELECTED ITEM", selectedItem)
 
   // send the selected item or input to form
   const handleSelectedItem = (item) => {
@@ -337,15 +305,15 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
   }
 
   const getSuggestions = useCallback(async q => {
-    console.log("userlocation", userLocation)
+    console.log("usercoordinates", userCoordinates)
     const filterToken = q.toLowerCase()
     if (typeof q !== 'string' || q.length < 1) {
       setSuggestionsList(null)
       return
     }
     setLoading(true)
-    const items = await getAutocompleteSuggestions(q)
 
+    const items = await getAutocompleteSuggestions(q)
     const suggestions = items
       .filter(item => item.title.toLowerCase().includes(filterToken))
       .map(item => ({
@@ -353,15 +321,17 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
         title: item.title,
         coordinates: [item.coordinates[1], item.coordinates[0]]
     }))
-    // add userLocation as an option if exists
-    if (userLocation) {
-      suggestions.unshift({
-        id: userLocation.id,
-        title: userLocation.title,
-        coordinates: userLocation.coordinates
-      })
+    // add userLocation as the first option in origin field
+    if (placeholder === "Enter origin") {
+      if (userCoordinates) {
+        suggestions.unshift({
+          id: "userlocation",
+          title: "Use My Location",
+          coordinates: userCoordinates
+        })
+      }
     }
-    //console.log("SUGGESTIONS", suggestions)
+
     setSuggestionsList(suggestions)
     setLoading(false)
     }, [])
@@ -441,6 +411,7 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
 const DestinationSelect = ({ navigation }) => {
   // useItineraries Context to save itineraries for the search query
   const { itineraries, setItineraries } = useItineraries();
+  const { itinerary, setItinerary } = useSelectedItinerary();
   // useLazyQuery to perform query later, not instantly
   const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_ITINERARY)
   let fetchedItineraries;
@@ -462,9 +433,6 @@ const DestinationSelect = ({ navigation }) => {
     } else {
       fetchedDestinationCoordinates = await getCoordinates(values.destination);
     }
-
-    console.log("fetched origin", fetchedOriginCoordinates)
-    console.log("fetched destination", fetchedDestinationCoordinates)
 
     // place fetched coordinates into variables and perform the query
     try {
@@ -493,6 +461,14 @@ const DestinationSelect = ({ navigation }) => {
       }
     }
   }
+
+  // set selected itinerary to null when exiting detailed view
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setItinerary(null)
+    });
+    return unsubscribe;
+  }, [navigation])
 
   const Result = () => {
     if (loading) {

@@ -100,7 +100,7 @@ const VehicleInformation = () => {
   return (
     <View style={{ flex: 1 }}>
       <VehicleActivity setVehicleLocation={setVehicleLocation} setStopsData={setStopsData} />
-      <Map vehicleLocation={vehicleLocation} />
+      <Map vehicleInformation={vehicleLocation} />
 
       {/* Button to toggle the menu */}
       <Pressable style={styles.menuButton} onPress={toggleMenu}>

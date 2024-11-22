@@ -5,6 +5,7 @@ import { useItineraries } from "../contexts/ItineraryContext";
 import moment from "moment";
 import Map from "./Map";
 import { useState } from "react";
+import { useSelectedItinerary } from "../contexts/SelectedItineraryContext";
 
 const styles = StyleSheet.create({
   flexContainer: {
@@ -93,129 +94,23 @@ async function getVehicleInformation({lines, directions}) {
   return vehicleData
 }
 
-function getLines (itinerary) {
-  const legs = itinerary.legs
-  let lineNumbers = []
-  // if legs has a trip, save trip.routeShortName (line) to an array
-  for (let i = 0; i < legs.length; i++) {
-    if (legs[i].trip) {
-      lineNumbers.push(parseInt(legs[i].trip.routeShortName))
-    }
-  }
-  if (lineNumbers.length > 0) {
-    return lineNumbers
-  }
-  else {
-    return null
-  }
-}
-
-function getDirections (itinerary) {
-  // NOTE: graphQL directionId is 0, 1 or null
-  // but in ITS API vehicle-activity directionRef is either 1 or 2
-  const legs = itinerary.legs
-  let directions = []
-  for (let i = 0; i < legs.length; i++) {
-    if (legs[i].trip) {
-      directions.push(parseInt(legs[i].trip.directionId) + 1)
-    }
-  }
-  if (directions.length > 0) {
-    return directions
-  }
-  else {
-    return null
-  }
-}
-
-function getJourneyGeometry (itinerary) {
-  const legs = itinerary.legs
-  let legsGeometry = []
-  // if legs has a legGeometry, save points into an array
-  for (let i = 0; i < legs.length; i++) {
-    if (legs[i].legGeometry) {
-      legsGeometry.push(legs[i].legGeometry.points)
-    }
-  }
-  if (legsGeometry.length > 0) {
-    return legsGeometry
-  }
-  else {
-    return null
-  }
-}
-
-function getStopCoordinates (itinerary) {
-  const legs = itinerary.legs
-  let stopCoordinates = []
-  // if stop coordinates exist in from, to, or intermediatePlaces, push into array
-  for (let i = 0; i < legs.length; i++) {
-    if (legs[i].from.stop) {
-      stopCoordinates.push({
-        latitude: legs[i].from.stop.lat,
-        longitude: legs[i].from.stop.lon
-      })
-    }
-    if (legs[i].intermediatePlaces.length > 0) {
-      const intermediatePlacesFlat = legs[i].intermediatePlaces.map(i => {
-        return({
-          latitude: i.stop.lat,
-          longitude: i.stop.lon
-        })
-      })
-      stopCoordinates.push(intermediatePlacesFlat)
-    }
-    if (legs[i].to.stop) {
-      stopCoordinates.push({
-        latitude: legs[i].to.stop.lat,
-        longitude: legs[i].to.stop.lon
-      })
-    }
-  }
-  return stopCoordinates.flat()
-}
-
-function getLegModes (itinerary) {
-  const legs = itinerary.legs
-  let legModes = []
-  for (let i = 0; i < legs.length; i++) {
-    if (legs[i].mode) {
-      legModes.push(legs[i].mode)
-    }
-  }
-  if (legModes.length > 0) {
-    return legModes
-  }
-  else {
-    return null
-  }
-}
-
 const ItineraryDetails = ({ route }) => {
   const { itineraries } = useItineraries();
   const { itineraryId } = route.params;
   const selectedItinerary = itineraries.filter((itinerary) => itinerary.id === itineraryId)
-  const [lines, setLines] = useState([])
-  const [directions, setDirections] = useState([])
-  const [vehicleInformation, setVehicleInformation] = useState([])
-  const [journeyGeometry, setJourneyGeometry] = useState([])
-  const [stopCoordinates, setStopCoordinates] = useState([])
-  const [legModes, setLegModes] = useState([])
+  const {
+    itinerary,
+    setItinerary,
+    lines,
+    directions,
+    //vehicleInformation,
+  } = useSelectedItinerary();
 
-  // get current lines
-  // get geometry for the itinerary to pass it onto the map
+  const [vehicleInformation, setVehicleInformation] = useState([])
+
   useEffect(() => {
-    const fetchedLines = getLines(selectedItinerary[0])
-    const fetchedDirections = getDirections(selectedItinerary[0])
-    const fetchedGeometry = getJourneyGeometry(selectedItinerary[0])
-    const fetchedStopCoordinates = getStopCoordinates(selectedItinerary[0])
-    const fetchedLegModes = getLegModes(selectedItinerary[0])
-    setLines(fetchedLines);
-    setDirections(fetchedDirections);
-    setJourneyGeometry(fetchedGeometry);
-    setStopCoordinates(fetchedStopCoordinates);
-    setLegModes(fetchedLegModes);
-  }, [])
+    setItinerary(selectedItinerary[0])
+  }, [selectedItinerary])
 
   useEffect(() => {
     // TODO: does not immediately fetch, so marker takes a while to show up on the map
@@ -224,7 +119,7 @@ const ItineraryDetails = ({ route }) => {
       setVehicleInformation(fetchedInformation);
     }
     if (lines?.length > 0) {
-      // polling API every 5 seconds
+      // polling API every 2 seconds
       // NOTE: should somehow clear this so it doesn't keep polling when user changes itineraries
       // eg. clearInterval
       // maybe react query is better for polling than using setInterval
@@ -233,17 +128,19 @@ const ItineraryDetails = ({ route }) => {
     }
   }, [lines])
 
+  if (!itinerary) return null;
+
   return (
     <View style={styles.flexContainer}>
       <View style={styles.mapView}>
-        <Map vehicleLocation={vehicleInformation} journeyGeometry={journeyGeometry} stopCoordinates={stopCoordinates} legModes={legModes} />
+        <Map vehicleInformation={vehicleInformation} />
       </View>
       <Text>Itinerary {itineraryId}</Text>
-      <Text>Time: {getItineraryTimeAndDuration(selectedItinerary[0])}</Text>
-      <Text>Walk distance: {(selectedItinerary[0].walkDistance).toFixed()} meters ({(selectedItinerary[0].walkTime / 60).toFixed()} min)</Text>
+      <Text>Time: {getItineraryTimeAndDuration(itinerary)}</Text>
+      <Text>Walk distance: {(itinerary.walkDistance).toFixed()} meters ({(itinerary.walkTime / 60).toFixed()} min)</Text>
       <FlatList
         style={styles.flexItemResult}
-        data={selectedItinerary[0].legs}
+        data={itinerary.legs}
         renderItem={({ item }) => (
           <View>
             <Text>-------------</Text>

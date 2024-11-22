@@ -3,8 +3,16 @@ import { View, StyleSheet, Text } from 'react-native';
 import MapView, { Circle, Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 const polyline = require('@mapbox/polyline');
+import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
 
-const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates, legModes }) => {
+const Map = ({ vehicleInformation }) => {
+  const {
+    //vehicleInformation,
+    journeyGeometry,
+    stopCoordinates,
+    legModes
+  } = useSelectedItinerary();
+
   const [region, setRegion] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const mapRef = useRef(null); // Create a ref for the MapView
@@ -81,15 +89,15 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates, legModes }) =>
   }, [legModes])
 
   useEffect(() => {
-    if (vehicleLocation && mapRef.current) {
+    if (vehicleInformation && mapRef.current) {
       mapRef.current.animateToRegion({
-        latitude: vehicleLocation.latitude,
-        longitude: vehicleLocation.longitude,
+        latitude: vehicleInformation.latitude,
+        longitude: vehicleInformation.longitude,
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       }, 1000);
     }
-  }, [vehicleLocation]);
+  }, [vehicleInformation]);
 
   if (errorMsg) {
     return <Text>{errorMsg}</Text>;
@@ -109,8 +117,8 @@ const Map = ({ vehicleLocation, journeyGeometry, stopCoordinates, legModes }) =>
           showsIndoors={false}
         >
           <Marker coordinate={region} title="You are here" />
-          {vehicleLocation && // for multiple markers
-            vehicleLocation.map((v, index) => (
+          {vehicleInformation && // for multiple markers
+            vehicleInformation.map((v, index) => (
               <Marker
                 key={index}
                 pinColor={'blue'}
