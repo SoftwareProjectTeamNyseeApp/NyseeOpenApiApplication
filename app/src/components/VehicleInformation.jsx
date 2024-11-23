@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View, Pressable, TextInput, SafeAreaView, StyleSheet, Modal, Button, ScrollView } from 'react-native';
 import Map from './Map'; // Import the Map component
+import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
 
 const formatTime = (dateTimeString) => {
   if (!dateTimeString) return "N/A"; // Handle cases where time might be undefined
@@ -19,12 +20,13 @@ const getStopPointName = async (stopPointRef) => {
   }
 };
 
-const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
+const VehicleActivity = ({ setVehicleInformation, setStopsData }) => {
   const baseUrl = "https://data.itsfactory.fi/journeys/api/1";
   const [text, onChangeText] = useState('');
 
   const getVehicleActivity = async (line) => {
     const apiUrl = `${baseUrl}/vehicle-activity?lineRef=${line}`;
+    console.log("apiurl", apiUrl)
     try {
       const response = await fetch(apiUrl);
       const json = await response.json();
@@ -45,7 +47,7 @@ const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
           })
         })
 
-        setVehicleLocation(vehicleData)
+        setVehicleInformation(vehicleData)
 
         // Check if onwardsCalls exists and is an array
         if (Array.isArray(vehicleData[0].details.onwardCalls)) {
@@ -80,7 +82,7 @@ const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
           placeholder="line number, example 2"
           style={styles.input}
         />
-        <Pressable style={styles.getButton} onPress={() => getVehicleActivity(text)}>
+        <Pressable style={styles.getButton} onPress={() => getVehicleActivity(text.toUpperCase())}>
           <Text style={styles.buttonText}>Get</Text>
         </Pressable>
       </View>
@@ -89,9 +91,11 @@ const VehicleActivity = ({ setVehicleLocation, setStopsData }) => {
 };
 
 const VehicleInformation = () => {
-  const [vehicleLocation, setVehicleLocation] = useState([]);
+  //const [vehicleLocation, setVehicleLocation] = useState([]);
   const [stopsData, setStopsData] = useState([]); // New state for stops data
   const [isMenuVisible, setMenuVisible] = useState(false);
+
+  const { setVehicleInformation } = useSelectedItinerary();
 
   const toggleMenu = () => {
     setMenuVisible(!isMenuVisible);
@@ -99,8 +103,8 @@ const VehicleInformation = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <VehicleActivity setVehicleLocation={setVehicleLocation} setStopsData={setStopsData} />
-      <Map vehicleInformation={vehicleLocation} />
+      <VehicleActivity setVehicleInformation={setVehicleInformation} setStopsData={setStopsData} />
+      <Map /* vehicleInformation={vehicleLocation} */ />
 
       {/* Button to toggle the menu */}
       <Pressable style={styles.menuButton} onPress={toggleMenu}>

@@ -5,9 +5,9 @@ import * as Location from 'expo-location';
 const polyline = require('@mapbox/polyline');
 import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
 
-const Map = ({ vehicleInformation }) => {
+const Map = () => {
   const {
-    //vehicleInformation,
+    vehicleInformation,
     journeyGeometry,
     stopCoordinates,
     legModes
@@ -129,7 +129,7 @@ const Map = ({ vehicleInformation }) => {
                 title={v.line}
               >
                 <View style={[styles.lineMarker, v.line === "1" || v.line === "3" ? styles.tramColor : styles.busColor]}>
-                  <Text style={{fontWeight: "bold", color: "white"}}>{v.line}</Text>
+                  <Text style={{fontWeight: "bold", color: "white", fontSize: 12}}>{v.line}</Text>
                 </View>
               </Marker>
             ))

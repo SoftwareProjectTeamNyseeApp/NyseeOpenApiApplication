@@ -33,27 +33,38 @@ export const SelectedItineraryProvider = ({children}) => {
   }, [itinerary])
 
   useEffect(() => {
-    // TODO: does not immediately fetch, so marker takes a while to show up on the map
-    const getCurrentVehicleInformation = async () => {
-      const fetchedInformation = await getVehicleInformation({lines, directions})
-      setVehicleInformation(fetchedInformation);
-    }
     if (lines?.length > 0) {
+      console.log("lines:", lines)
+      const getCurrentVehicleInformation = async () => {
+        const fetchedInformation = await getVehicleInformation({lines, directions})
+        setVehicleInformation(fetchedInformation);
+      }
+
+      getCurrentVehicleInformation()
       // polling API every 2 seconds
-      // NOTE: should somehow clear this so it doesn't keep polling when user changes itineraries
-      // eg. clearInterval
-      // maybe react query is better for polling than using setInterval
-      setInterval(getCurrentVehicleInformation, 2000);
-      //getCurrentVehicleInformation()
+      const interval = setInterval(getCurrentVehicleInformation, 2000);
+      return () => {
+        console.log("in return")
+        clearInterval(interval)
+        setVehicleInformation([])
+      }
+    } else {
+      console.log("lines 0", lines)
     }
   }, [lines, directions])
+
+  useEffect(() => {
+    if(vehicleInformation.length > 0) {
+      console.log("VEH INFO", vehicleInformation[0].line)
+    }
+  }, [vehicleInformation])
 
   function getLines (legs) {
     let lineNumbers = []
     // if legs has a trip, save trip.routeShortName (line) to an array
     for (let i = 0; i < legs.length; i++) {
       if (legs[i].trip) {
-        lineNumbers.push(parseInt(legs[i].trip.routeShortName))
+        lineNumbers.push(legs[i].trip.routeShortName)
       }
     }
     if (lineNumbers.length > 0) {
@@ -149,7 +160,7 @@ export const SelectedItineraryProvider = ({children}) => {
     for (let i = 0; i < directions.length; i++) {
       apiUrl.push(`${baseUrl}/vehicle-activity?lineRef=${lines[i]}&directionRef=${directions[i]}`)
     }
-    //console.log("URL", apiUrl)
+    console.log("URL", apiUrl)
 
     // fetch data from multiple URLs
     const fetchUrls = async (urls) => {
@@ -194,6 +205,7 @@ export const SelectedItineraryProvider = ({children}) => {
         lines,
         directions,
         vehicleInformation,
+        setVehicleInformation,
         journeyGeometry,
         stopCoordinates,
         legModes

@@ -86,7 +86,7 @@ export const MyForm = (props) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [mode, setMode] = useState('date')
 
-  console.log("VALUES IN FORM", values)
+  //console.log("VALUES IN FORM", values)
 
   const showMode = (currentMode) => {
     setDatePickerVisibility(true)

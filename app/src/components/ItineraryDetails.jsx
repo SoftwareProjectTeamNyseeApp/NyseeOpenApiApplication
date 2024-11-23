@@ -4,7 +4,6 @@ import { getItineraryTimeAndDuration } from "./DestinationSelect";
 import { useItineraries } from "../contexts/ItineraryContext";
 import moment from "moment";
 import Map from "./Map";
-import { useState } from "react";
 import { useSelectedItinerary } from "../contexts/SelectedItineraryContext";
 
 const styles = StyleSheet.create({
@@ -49,51 +48,6 @@ function getIntermediatePlaces(legs) {
   )
 }
 
-async function getVehicleInformation({lines, directions}) {
-  const baseUrl = "https://data.itsfactory.fi/journeys/api/1";
-  //const apiUrl = `${baseUrl}/vehicle-activity?lineRef=${lines[0]}&directionRef=${directions[0]}`
-  // for multiple URLs
-  let apiUrl = []
-  for (let i = 0; i < directions.length; i++) {
-    apiUrl.push(`${baseUrl}/vehicle-activity?lineRef=${lines[i]}&directionRef=${directions[i]}`)
-  }
-  //console.log("URL", apiUrl)
-
-  // fetch data from multiple URLs
-  const fetchUrls = async (urls) => {
-    try {
-      const promises = urls.map(url => fetch(url));
-      const responses = await Promise.all(promises);
-      const data = await Promise.all(responses.map(response => response.json()));
-      return data
-    } catch (error) {
-      throw new Error(`Failed to fetch data: ${error}`)
-    }
-  }
-
-  const vehicleData = fetchUrls(apiUrl)
-    .then(data => {
-      const dataFlat = data.flatMap(d => d.body)
-
-      if (dataFlat.length > 0) {
-        const tempVehicleData = dataFlat.map((d) => {
-          return({
-            latitude: d.monitoredVehicleJourney.vehicleLocation.latitude,
-            longitude: d.monitoredVehicleJourney.vehicleLocation.longitude,
-            line: d.monitoredVehicleJourney.lineRef,
-            details: d.monitoredVehicleJourney
-          })
-        })
-        return tempVehicleData
-      }
-    })
-    .catch(error => {
-      console.error("Error fetching data:", error)
-    });
-
-  return vehicleData
-}
-
 const ItineraryDetails = ({ route }) => {
   const { itineraries } = useItineraries();
   const { itineraryId } = route.params;
@@ -101,39 +55,18 @@ const ItineraryDetails = ({ route }) => {
   const {
     itinerary,
     setItinerary,
-    lines,
-    directions,
-    //vehicleInformation,
   } = useSelectedItinerary();
-
-  const [vehicleInformation, setVehicleInformation] = useState([])
 
   useEffect(() => {
     setItinerary(selectedItinerary[0])
   }, [selectedItinerary])
-
-  useEffect(() => {
-    // TODO: does not immediately fetch, so marker takes a while to show up on the map
-    const getCurrentVehicleInformation = async () => {
-      const fetchedInformation = await getVehicleInformation({lines, directions})
-      setVehicleInformation(fetchedInformation);
-    }
-    if (lines?.length > 0) {
-      // polling API every 2 seconds
-      // NOTE: should somehow clear this so it doesn't keep polling when user changes itineraries
-      // eg. clearInterval
-      // maybe react query is better for polling than using setInterval
-      setInterval(getCurrentVehicleInformation, 2000);
-      //getCurrentVehicleInformation()
-    }
-  }, [lines])
 
   if (!itinerary) return null;
 
   return (
     <View style={styles.flexContainer}>
       <View style={styles.mapView}>
-        <Map vehicleInformation={vehicleInformation} />
+        <Map />
       </View>
       <Text>Itinerary {itineraryId}</Text>
       <Text>Time: {getItineraryTimeAndDuration(itinerary)}</Text>
