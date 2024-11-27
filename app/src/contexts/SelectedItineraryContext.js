@@ -13,6 +13,7 @@ export const SelectedItineraryProvider = ({children}) => {
 
   useEffect(() => {
     if (itinerary) {
+      console.log("ITINERARY LEGS", itinerary.legs)
       const fetchedLines = getLines(itinerary.legs)
       const fetchedDirections = getDirections(itinerary.legs)
       const fetchedGeometry = getJourneyGeometry(itinerary.legs)
@@ -118,7 +119,7 @@ export const SelectedItineraryProvider = ({children}) => {
           longitude: legs[i].from.stop.lon
         })
       }
-      if (legs[i].intermediatePlaces.length > 0) {
+      if (legs[i].intermediatePlaces) {
         const intermediatePlacesFlat = legs[i].intermediatePlaces.map(i => {
           return({
             latitude: i.stop.lat,
