@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Text, View, Pressable, TextInput, SafeAreaView, StyleSheet, Modal, Button, ScrollView } from 'react-native';
 import Map from './Map'; // Import the Map component
 import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 const formatTime = (dateTimeString) => {
   if (!dateTimeString) return "N/A"; // Handle cases where time might be undefined
@@ -31,12 +32,6 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData }) => {
       const response = await fetch(apiUrl);
       const json = await response.json();
       if (json.body.length > 0) {
-      /*const vehicleData = json.body[0].monitoredVehicleJourney;
-        setVehicleLocation({
-          latitude: vehicleData.vehicleLocation.latitude,
-          longitude: vehicleData.vehicleLocation.longitude,
-          details: vehicleData, // Store vehicle details
-        }); */
         // for displaying multiple vehicles in VehicleInfoView
         const vehicleData = json.body.map(b => {
           return({
@@ -91,7 +86,6 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData }) => {
 };
 
 const VehicleInformation = () => {
-  //const [vehicleLocation, setVehicleLocation] = useState([]);
   const [stopsData, setStopsData] = useState([]); // New state for stops data
   const [isMenuVisible, setMenuVisible] = useState(false);
 
@@ -101,10 +95,19 @@ const VehicleInformation = () => {
     setMenuVisible(!isMenuVisible);
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        // clear vehicle information when screen unfocused
+        setVehicleInformation([])
+      };
+    }, [])
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <VehicleActivity setVehicleInformation={setVehicleInformation} setStopsData={setStopsData} />
-      <Map /* vehicleInformation={vehicleLocation} */ />
+      <Map />
 
       {/* Button to toggle the menu */}
       <Pressable style={styles.menuButton} onPress={toggleMenu}>

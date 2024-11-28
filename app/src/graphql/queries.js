@@ -36,7 +36,7 @@ export const GET_TEST_ITINERARY = gql`
   }
 `
 
-export const GET_ITINERARY = gql`
+export const GET_DEPRECATED_ITINERARY = gql`
   query getCustomItinerary(
     $from: InputCoordinates!
     $to: InputCoordinates!
@@ -122,6 +122,101 @@ export const GET_ITINERARY = gql`
               code
               lat
               lon
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+export const GET_ITINERARY = gql`
+  query getCustomItinerary(
+    $origin: PlanCoordinateInput!
+    $destination: PlanCoordinateInput!
+    $dateTime: OffsetDateTime
+  ) {
+	  planConnection(
+      destination: { location: { coordinate: $destination } }
+      origin: { location: { coordinate: $origin } }
+      dateTime: { earliestDeparture: $dateTime }
+      first: 5
+    ) {
+      pageInfo {
+        startCursor
+        endCursor
+      }
+      edges {
+        node {
+          start
+          end
+          duration
+          waitingTime
+          walkDistance
+          walkTime
+          legs {
+            start { scheduledTime, estimated { time, delay } }
+            end { scheduledTime, estimated { time, delay } }
+            mode
+            from {
+              lat
+              lon
+              name
+              stop {
+                code
+                name
+                lat
+                lon
+              }
+            },
+            to {
+              lat
+              lon
+              name
+              stop {
+                code
+                name
+                lat
+                lon
+              }
+            },
+            duration
+            realTime
+            realtimeState
+            distance
+            transitLeg
+            legGeometry {
+              length
+              points
+            }
+            trip {
+              id
+              gtfsId
+              directionId
+              routeShortName
+              tripHeadsign
+              tripGeometry {
+                length
+                points
+              }
+              alerts {
+                id
+                alertHeaderText
+                alertDescriptionText
+              }
+              wheelchairAccessible
+            }
+            intermediatePlaces {
+              name
+              arrival { scheduledTime, estimated { time, delay } }
+              departure { scheduledTime, estimated { time, delay } }
+              stop {
+                id
+                name
+                code
+                lat
+                lon
+              }
             }
           }
         }

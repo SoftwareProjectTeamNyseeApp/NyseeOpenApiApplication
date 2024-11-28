@@ -70,7 +70,7 @@ const LocationForm = ({ onSubmit }) => {
         origin: '',
         destination: '',
         date: moment(new Date()).format('YYYY-MM-DD'),
-        time: moment(new Date()).format('HH:mm:ss')
+        time: moment(new Date()).format('HH:mm:ss'),
       }}
       onSubmit={values => onSubmit(values)}
     >
@@ -175,7 +175,6 @@ export const MyForm = (props) => {
   );
 }
 
-// WIP: connect with Formik
 // use Geocoding Autocomplete API to get address suggestions for input fields
 const getAutocompleteSuggestions = async (values) => {
   const url = (
@@ -213,7 +212,6 @@ const getAutocompleteSuggestions = async (values) => {
         layer: f.properties.layer, // street, address
       })
     })
-    //console.log("suggested", suggestedAddresses)
     return suggestedAddresses
   })
   .catch(error => {
@@ -260,8 +258,8 @@ const getCoordinates = async (values) => {
 }
 
 export function getItineraryTimeAndDuration (itinerary) {
-  const startTime = new Date(itinerary.startTime)
-  const endTime = new Date(itinerary.endTime)
+  const startTime = new Date(itinerary.start)
+  const endTime = new Date(itinerary.end)
   const duration = (itinerary.duration / 60).toFixed()
   const selectedDate = moment(startTime).format('DD.MM.')
 
@@ -305,7 +303,6 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
   }
 
   const getSuggestions = useCallback(async q => {
-    console.log("usercoordinates", userCoordinates)
     const filterToken = q.toLowerCase()
     if (typeof q !== 'string' || q.length < 1) {
       setSuggestionsList(null)
@@ -411,7 +408,6 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
 const DestinationSelect = ({ navigation }) => {
   // useItineraries Context to save itineraries for the search query
   const { itineraries, setItineraries } = useItineraries();
-  const { itinerary, setItinerary } = useSelectedItinerary();
   // useLazyQuery to perform query later, not instantly
   const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_ITINERARY)
   let fetchedItineraries;
@@ -420,6 +416,7 @@ const DestinationSelect = ({ navigation }) => {
   const onSubmit = async (values) => {
     let fetchedOriginCoordinates = ''
     let fetchedDestinationCoordinates = ''
+    const dateTime = moment(values.date + values.time, 'YYYY-MM-DD HH:mm').format()
 
     // if the address is selected from suggestions, it already has coordinates resolved
     if (values.origin.coordinates) {
@@ -438,15 +435,17 @@ const DestinationSelect = ({ navigation }) => {
     try {
       const response = await getCustomItinerary({
         variables: {
-          from: { lat: fetchedOriginCoordinates[0], lon: fetchedOriginCoordinates[1] },
-          to: { lat: fetchedDestinationCoordinates[0], lon: fetchedDestinationCoordinates[1] },
-          date: values.date,
-          time: values.time
+          origin: { latitude: fetchedOriginCoordinates[0], longitude: fetchedOriginCoordinates[1] },
+          destination: { latitude: fetchedDestinationCoordinates[0], longitude: fetchedDestinationCoordinates[1] },
+          dateTime: dateTime
         }
       });
-      // add id to itineraries and save to context
-      fetchedItineraries = response.data.plan.itineraries.map((item, index) => (
-        { ...item, id: index + 1 }
+
+      // TODO: pagination
+      console.log("PAGEINFO", response.data.planConnection.pageInfo)
+
+      fetchedItineraries = response.data.planConnection.edges.map((item, index) => (
+        { ...item.node, id: index + 1 }
       ))
       setItineraries(fetchedItineraries)
     } catch (error) {
@@ -461,14 +460,6 @@ const DestinationSelect = ({ navigation }) => {
       }
     }
   }
-
-  // set selected itinerary to null when exiting detailed view
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      setItinerary(null)
-    });
-    return unsubscribe;
-  }, [navigation])
 
   const Result = () => {
     if (loading) {
