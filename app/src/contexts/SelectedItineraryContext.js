@@ -13,7 +13,6 @@ export const SelectedItineraryProvider = ({children}) => {
 
   useEffect(() => {
     if (itinerary) {
-      console.log("ITINERARY LEGS", itinerary.legs)
       const fetchedLines = getLines(itinerary.legs)
       const fetchedDirections = getDirections(itinerary.legs)
       const fetchedGeometry = getJourneyGeometry(itinerary.legs)
@@ -35,7 +34,6 @@ export const SelectedItineraryProvider = ({children}) => {
 
   useEffect(() => {
     if (lines?.length > 0) {
-      console.log("lines:", lines)
       const getCurrentVehicleInformation = async () => {
         const fetchedInformation = await getVehicleInformation({lines, directions})
         setVehicleInformation(fetchedInformation);
@@ -45,20 +43,11 @@ export const SelectedItineraryProvider = ({children}) => {
       // polling API every 2 seconds
       const interval = setInterval(getCurrentVehicleInformation, 2000);
       return () => {
-        console.log("in return")
         clearInterval(interval)
         setVehicleInformation([])
       }
-    } else {
-      console.log("lines 0", lines)
     }
   }, [lines, directions])
-
-  useEffect(() => {
-    if(vehicleInformation.length > 0) {
-      console.log("VEH INFO", vehicleInformation[0].line)
-    }
-  }, [vehicleInformation])
 
   function getLines (legs) {
     let lineNumbers = []

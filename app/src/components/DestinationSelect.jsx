@@ -387,6 +387,7 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
             inputContainerStyle={{
               backgroundColor: '#fff',
               borderRadius: 10,
+              width: 340
             }}
             suggestionsListContainerStyle={{
               backgroundColor: '#fff',
