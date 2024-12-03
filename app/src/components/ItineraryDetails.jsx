@@ -25,47 +25,102 @@ const getStopPointName = async (stopPointRef) => {
   }
 };
 
-// TODO: select correct vehicle
-// FIND CORRECT VEHICLE
-// e.g. details.framedVehicleJourney.datedVehicleJourneyRef (url of specific journey)
-// -> calls.arrivalTime & calls.stopPoint.name or calls.stopPoint.shortName
-// -> or same for stopname but expectedArrivalTime can be used (if from another API also estimated time)
-// compare from other API: from.name or from.stop.code
-// SHOW CORRECT VEHICLE TIMETABLE
-// FILTER STOPS FROM CORRECT VEHICLE or
-// SHOW ONLY STOPS WHERE YOU HAVE TO DISEMBARK
-// check also how it works with just one line vs multiple lines
-// or just compare current time with the graphQL returned data....
-async function getStopsData(vehicleInformation) {
-  //console.log("VEH INFO", vehicleInformation)
-  // Check if onwardsCalls exists and is an array
-  if (Array.isArray(vehicleInformation[1].details.onwardCalls)) {
-    const busInfo = vehicleInformation[1].details.onwardCalls;
-
-    // Fetch stop names for each stopPointRef
-    const stopsData = await Promise.all(busInfo.map(async (call) => {
-      const stopName = await getStopPointName(call.stopPointRef);
-      return {
-        stopName, // Use the fetched stop name
-        expectedArrivalTime: formatTime(call.expectedArrivalTime),
-        expectedDepartureTime: formatTime(call.expectedDepartureTime)
-      };
-    }));
-    return stopsData;
+function getOriginDepartureStopData({itinerary}) {
+  // get origin departure stop time and other data to compare and filter vehicleinformation
+  let departureFromOriginStop = [];
+  for (let i = 0; i < itinerary.legs.length; i++) {
+    if (itinerary.legs[i].trip) {
+      departureFromOriginStop.push(itinerary.legs[i].trip.departureStoptime)
+    }
   }
+  return departureFromOriginStop
+}
+
+async function filterVehicleData({vehicleInformation, originDepartureData}) {
+  let filteredStopsData = [];
+  // filter vehicleinformation based on origin aimed departure time from first stop of the route
+  // from graphQL, the data is in "seconds from midnight", timezone is local
+  // from ITS Journeys, data is in HHmm, e.g. 2030, timezone is UTC+0
+
+  // if departure time from origin is same for both and lines are same, push to array
+  for (let i = 0; i < originDepartureData.length; i++) {
+    for (let j = 0; j < vehicleInformation.length; j++) {
+      const originDepartureTime = moment.utc(originDepartureData[i].scheduledDeparture * 1000).format('HH:mm')
+      //console.log("origin in seconds", originDepartureData[i].scheduledDeparture)
+      //console.log("ORIGINDEPARTUREITME", originDepartureTime)
+      const originAimedDepartureTime = moment.utc(vehicleInformation[j].details.originAimedDepartureTime, 'HHmm').toDate()
+      const originAimedDepartureTimeCorrectTimeZone = moment(originAimedDepartureTime).format('HH:mm')
+      const firstLineToCompare = originDepartureData[i].trip.routeShortName
+      const secondLineToCompare = vehicleInformation[j].line
+      const firstDirectionToCompare = (parseInt(originDepartureData[i].trip.directionId) + 1).toString()
+      const secondDirectionToCompare = vehicleInformation[j].details.directionRef
+      console.log("FOR GRAPHQL", i, "TIME IS", originDepartureTime, "FOR LINE/DIR", firstLineToCompare,"/",firstDirectionToCompare, "AND FOR ITS", j, "TIME IS", originAimedDepartureTimeCorrectTimeZone, "FOR LINE/DIR", secondLineToCompare,"/", secondDirectionToCompare)
+      // is there a need to add a minute or two of leeway?
+      if (originDepartureTime === originAimedDepartureTimeCorrectTimeZone) {
+        if (firstLineToCompare === secondLineToCompare && firstDirectionToCompare && secondDirectionToCompare) {
+          console.log("TRUE FOR", i, "AND", j, "WHERE TIME IS", originDepartureTime, "/", originAimedDepartureTimeCorrectTimeZone, "FOR LINE", originDepartureData[i].trip.routeShortName, "/", vehicleInformation[j].line)
+          filteredStopsData.push(vehicleInformation[j])
+        }
+      }
+    }
+  }
+
+  console.log("FILTERED", filteredStopsData)
+  console.log("FILTERED LENGTH", filteredStopsData.length)
+
+  return filteredStopsData
+}
+
+async function getStopsData(vehicleInformation) {
+  console.log("VEH INFO", vehicleInformation.length)
+  // Check if onwardsCalls exists and is an array
+  for (let i = 0; i < vehicleInformation.length; i++) {
+    if (Array.isArray(vehicleInformation[i].details.onwardCalls)) {
+      const busInfo = vehicleInformation[i].details.onwardCalls;
+
+      // Fetch stop names for each stopPointRef
+      const stopsData = await Promise.all(busInfo.map(async (call) => {
+        const stopName = await getStopPointName(call.stopPointRef);
+        return {
+          stopName, // Use the fetched stop name
+          expectedArrivalTime: formatTime(call.expectedArrivalTime),
+          expectedDepartureTime: formatTime(call.expectedDepartureTime)
+        };
+      }));
+      console.log("STOPSDATA", stopsData)
+      return stopsData;
+    }
+  }
+
   return []
 }
 
-const StopTimeModal = () => {
+const StopTimeModal = (itinerary) => {
   const { vehicleInformation } = useSelectedItinerary();
   const [stopsData, setStopsData] = useState([]); // New state for stops data
   const [isMenuVisible, setMenuVisible] = useState(false);
+  // origin departure data from itinerary for filtering vehicle information and stops data
+  const [originDepartureData, setOriginDepartureData] = useState([]);
+
+  useEffect(() => {
+    if (itinerary) {
+      const originDepartureStopData = getOriginDepartureStopData(itinerary)
+      setOriginDepartureData(originDepartureStopData)
+    }
+  }, [])
+
+  useEffect(() => {
+    console.log("ORIGINDEPDATA", originDepartureData)
+  }, [originDepartureData])
 
   useEffect(() => {
     if (vehicleInformation.length > 0) {
       const getCurrentStopsData = async () => {
-        const fetchedStopsData = await getStopsData(vehicleInformation)
-        setStopsData(fetchedStopsData)
+        //const fetchedStopsData = await getStopsData(vehicleInformation)
+        //setStopsData(fetchedStopsData)
+        const filteredVehicleInformation = await filterVehicleData({vehicleInformation, originDepartureData})
+        const fetchedfilteredStopsData = await getStopsData(filteredVehicleInformation)
+        setStopsData(fetchedfilteredStopsData)
       }
       getCurrentStopsData()
     }
@@ -90,13 +145,19 @@ const StopTimeModal = () => {
           <View style={styles.menuContent}>
             <Text style={styles.menuTitle}>Vehicle Details</Text>
             <ScrollView>
-              {stopsData.map((stop, index) => (
-                <View key={index} style={styles.stopItem}>
-                  <Text>Stop Name: {stop.stopName}</Text>
-                  <Text>Expected Arrival: {stop.expectedArrivalTime}</Text>
-                  <Text>Expected Departure: {stop.expectedDepartureTime}</Text>
-                </View>
-              ))}
+              {stopsData.length > 0 ? (
+                stopsData.map((stop, index) => (
+                  <View key={index} style={styles.stopItem}>
+                    <Text>Stop Name: {stop.stopName}</Text>
+                    <Text>Expected Arrival: {stop.expectedArrivalTime}</Text>
+                    <Text>Expected Departure: {stop.expectedDepartureTime}</Text>
+                  </View>))
+                ) : (
+                  <View style={styles.stopItem}>
+                    <Text>No real time data available yet for this itinerary</Text>
+                  </View>
+                )
+              }
             </ScrollView>
             <Button title="Close" onPress={toggleMenu} />
           </View>
@@ -202,7 +263,7 @@ const ItineraryDetails = ({ route }) => {
               </View>
             )}
           />
-          <StopTimeModal />
+          <StopTimeModal itinerary={itinerary}/>
         </View>
       </SafeAreaView>
     </SafeAreaProvider>

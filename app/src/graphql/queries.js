@@ -162,6 +162,7 @@ export const GET_ITINERARY = gql`
               lat
               lon
               name
+              departure { scheduledTime, estimated { time, delay } }
               stop {
                 code
                 name
@@ -205,6 +206,21 @@ export const GET_ITINERARY = gql`
                 alertDescriptionText
               }
               wheelchairAccessible
+              departureStoptime {
+                realtime
+                realtimeDeparture
+                departureDelay
+                scheduledDeparture
+                stopPosition
+                stop {
+                  code
+                  name
+                }
+                trip {
+                  routeShortName
+                  directionId
+                }
+              }
             }
             intermediatePlaces {
               name
