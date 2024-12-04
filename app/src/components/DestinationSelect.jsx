@@ -477,7 +477,7 @@ const DestinationSelect = ({ navigation }) => {
     }
     return (
       <View>
-        <Text>Data received!</Text>
+        <Text> </Text>
         <FlatList
           style={styles.flexItemResult}
           data={itineraries}

@@ -9,7 +9,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const formatTime = (dateTimeString) => {
-  if (!dateTimeString) return "N/A"; // Handle cases where time might be undefined
+  if (!dateTimeString) return "Now";
   const timePart = moment(dateTimeString).format('HH:mm:ss')
   return timePart
 };
@@ -36,7 +36,20 @@ function getOriginDepartureStopData({itinerary}) {
   return departureFromOriginStop
 }
 
-async function filterVehicleData({vehicleInformation, originDepartureData}) {
+function getLastStops({itinerary}) {
+  let lastStopsArray = []
+  for (let i = 0; i < itinerary.legs.length; i++) {
+    if (itinerary.legs[i].trip && itinerary.legs[i].to.stop) {
+      lastStopsArray.push({
+        stopCode: itinerary.legs[i].to.stop.code,
+        line: itinerary.legs[i].trip.routeShortName
+      })
+    }
+  }
+  return lastStopsArray
+}
+
+function filterVehicleData({vehicleInformation, originDepartureData}) {
   let filteredStopsData = [];
   // filter vehicleinformation based on origin aimed departure time from first stop of the route
   // from graphQL, the data is in "seconds from midnight", timezone is local
@@ -46,16 +59,13 @@ async function filterVehicleData({vehicleInformation, originDepartureData}) {
   for (let i = 0; i < originDepartureData.length; i++) {
     for (let j = 0; j < vehicleInformation.length; j++) {
       const originDepartureTime = moment.utc(originDepartureData[i].scheduledDeparture * 1000).format('HH:mm')
-      //console.log("origin in seconds", originDepartureData[i].scheduledDeparture)
-      //console.log("ORIGINDEPARTUREITME", originDepartureTime)
       const originAimedDepartureTime = moment.utc(vehicleInformation[j].details.originAimedDepartureTime, 'HHmm').toDate()
       const originAimedDepartureTimeCorrectTimeZone = moment(originAimedDepartureTime).format('HH:mm')
       const firstLineToCompare = originDepartureData[i].trip.routeShortName
       const secondLineToCompare = vehicleInformation[j].line
       const firstDirectionToCompare = (parseInt(originDepartureData[i].trip.directionId) + 1).toString()
       const secondDirectionToCompare = vehicleInformation[j].details.directionRef
-      console.log("FOR GRAPHQL", i, "TIME IS", originDepartureTime, "FOR LINE/DIR", firstLineToCompare,"/",firstDirectionToCompare, "AND FOR ITS", j, "TIME IS", originAimedDepartureTimeCorrectTimeZone, "FOR LINE/DIR", secondLineToCompare,"/", secondDirectionToCompare)
-      // is there a need to add a minute or two of leeway?
+      //console.log("FOR GRAPHQL", i, "TIME IS", originDepartureTime, "FOR LINE/DIR", firstLineToCompare,"/",firstDirectionToCompare, "AND FOR ITS", j, "TIME IS", originAimedDepartureTimeCorrectTimeZone, "FOR LINE/DIR", secondLineToCompare,"/", secondDirectionToCompare)
       if (originDepartureTime === originAimedDepartureTimeCorrectTimeZone) {
         if (firstLineToCompare === secondLineToCompare && firstDirectionToCompare && secondDirectionToCompare) {
           console.log("TRUE FOR", i, "AND", j, "WHERE TIME IS", originDepartureTime, "/", originAimedDepartureTimeCorrectTimeZone, "FOR LINE", originDepartureData[i].trip.routeShortName, "/", vehicleInformation[j].line)
@@ -71,8 +81,26 @@ async function filterVehicleData({vehicleInformation, originDepartureData}) {
   return filteredStopsData
 }
 
+function filterByLastStop({lastStopsOfTrips, filteredVehicleInformation}) {
+  for (let i = 0; i < filteredVehicleInformation.length; i++) {
+    if (lastStopsOfTrips[i]) {
+      if (filteredVehicleInformation[i].line === lastStopsOfTrips[i].line) {
+        // find index of last stop for trip and remove stops from array after that stop
+        const indexOfLastStop = filteredVehicleInformation[i].details.onwardCalls.findIndex(isLastStop)
+        filteredVehicleInformation[i].details.onwardCalls.splice(indexOfLastStop + 1)
+
+        function isLastStop(element) {
+          if (element.stopPointRef.slice(-4) === lastStopsOfTrips[i].stopCode) return true;
+          return false
+        }
+      }
+    }
+  }
+  return filteredVehicleInformation
+}
+
 async function getStopsData(vehicleInformation) {
-  console.log("VEH INFO", vehicleInformation.length)
+  let stopsDataArray = [];
   // Check if onwardsCalls exists and is an array
   for (let i = 0; i < vehicleInformation.length; i++) {
     if (Array.isArray(vehicleInformation[i].details.onwardCalls)) {
@@ -81,18 +109,56 @@ async function getStopsData(vehicleInformation) {
       // Fetch stop names for each stopPointRef
       const stopsData = await Promise.all(busInfo.map(async (call) => {
         const stopName = await getStopPointName(call.stopPointRef);
+        const stopCode = call.stopPointRef.slice(-4)
         return {
           stopName, // Use the fetched stop name
+          stopCode: stopCode,
           expectedArrivalTime: formatTime(call.expectedArrivalTime),
           expectedDepartureTime: formatTime(call.expectedDepartureTime)
         };
       }));
-      console.log("STOPSDATA", stopsData)
-      return stopsData;
+      stopsDataArray.push({
+        line: vehicleInformation[i].line,
+        stops: stopsData
+      });
+    }
+  }
+  return stopsDataArray
+}
+
+function getTimeUntilDisembark(lastStop) {
+  const arrivalTime = lastStop[0].expectedArrivalTime
+  let arrivalTimeMoment = moment(arrivalTime, 'HH:mm:ss')
+  // milliseconds until arrival, current time subtracted from arrival time
+  const msUntilArrival = moment(arrivalTimeMoment).valueOf() - moment().valueOf()
+
+  // could add seconds too
+  // might show NaN when arriving
+  const minutesUntilDisembark = Math.floor(msUntilArrival / (1000 * 60))
+  const timeUntilDisembark = `${minutesUntilDisembark} minutes`
+  return timeUntilDisembark
+}
+
+const DisembarkComponent = ({stopsData}) => {
+  if (stopsData.length === 0) return null;
+
+  let lastStop = '';
+  let timeUntilDisembark = '';
+
+  for (let i = 0; i < stopsData.length; i++) {
+    if (stopsData[i].stops.length > 0) {
+      lastStop = stopsData[i].stops.slice(-1)
+      break;
     }
   }
 
-  return []
+  timeUntilDisembark = getTimeUntilDisembark(lastStop)
+
+  return (
+    <View>
+      <Text>Disembark in {timeUntilDisembark} at stop {lastStop[0].stopName} ({lastStop[0].stopCode})</Text>
+    </View>
+  )
 }
 
 const StopTimeModal = (itinerary) => {
@@ -101,6 +167,8 @@ const StopTimeModal = (itinerary) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   // origin departure data from itinerary for filtering vehicle information and stops data
   const [originDepartureData, setOriginDepartureData] = useState([]);
+  // last stops of trips done by vehicles, where user should disembark
+  const [lastStopsOfTrips, setLastStopsOfTrips] = useState([]);
 
   useEffect(() => {
     if (itinerary) {
@@ -110,16 +178,18 @@ const StopTimeModal = (itinerary) => {
   }, [])
 
   useEffect(() => {
-    console.log("ORIGINDEPDATA", originDepartureData)
-  }, [originDepartureData])
+    if (itinerary) {
+      const lastStops = getLastStops(itinerary)
+      setLastStopsOfTrips(lastStops)
+    }
+  }, [])
 
   useEffect(() => {
     if (vehicleInformation.length > 0) {
       const getCurrentStopsData = async () => {
-        //const fetchedStopsData = await getStopsData(vehicleInformation)
-        //setStopsData(fetchedStopsData)
-        const filteredVehicleInformation = await filterVehicleData({vehicleInformation, originDepartureData})
-        const fetchedfilteredStopsData = await getStopsData(filteredVehicleInformation)
+        const filteredVehicleInformation = filterVehicleData({vehicleInformation, originDepartureData})
+        const filteredByLastStop = filterByLastStop({lastStopsOfTrips, filteredVehicleInformation})
+        const fetchedfilteredStopsData = await getStopsData(filteredByLastStop)
         setStopsData(fetchedfilteredStopsData)
       }
       getCurrentStopsData()
@@ -143,21 +213,33 @@ const StopTimeModal = (itinerary) => {
       >
         <View style={styles.menuContainer}>
           <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>Vehicle Details</Text>
+            <Text style={styles.menuTitle}>Realtime stops data</Text>
+            <DisembarkComponent stopsData={stopsData} />
             <ScrollView>
               {stopsData.length > 0 ? (
-                stopsData.map((stop, index) => (
-                  <View key={index} style={styles.stopItem}>
-                    <Text>Stop Name: {stop.stopName}</Text>
-                    <Text>Expected Arrival: {stop.expectedArrivalTime}</Text>
-                    <Text>Expected Departure: {stop.expectedDepartureTime}</Text>
-                  </View>))
-                ) : (
-                  <View style={styles.stopItem}>
-                    <Text>No real time data available yet for this itinerary</Text>
-                  </View>
-                )
-              }
+                stopsData.map((data, index) => (
+                  data.stops.length > 0 ? (
+                    <View key={index} style={styles.stopContainer}>
+                      <Text style={styles.stopHeader}>Stops for line {data.line}</Text>
+                      <View>
+                        {stopsData[index].stops.map((stop, indexTwo) => (
+                          <View key={indexTwo} style={styles.stopItem}>
+                          <Text style={{fontWeight: 'bold'}}>{stop.stopName} ({stop.stopCode})</Text>
+                          <Text>Expected Arrival: {stop.expectedArrivalTime}</Text>
+                          <Text>Expected Departure: {stop.expectedDepartureTime}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : (
+                    <></>
+                  )
+                ))
+              ) : (
+                <View style={styles.stopItem}>
+                  <Text>No real time data available for this itinerary</Text>
+                </View>
+              )}
             </ScrollView>
             <Button title="Close" onPress={toggleMenu} />
           </View>
@@ -336,6 +418,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
   },
+  stopContainer: {
+    marginBottom: 10,
+    padding: 6,
+    backgroundColor: '#d0d0d0',
+    borderRadius: 5,
+  },
+  stopHeader: {
+    marginBottom: 10,
+    padding: 5,
+    paddingLeft: 10,
+    backgroundColor: '#404040',
+    borderRadius: 5,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontVariant: 'small-caps',
+  }
 });
 
 export default ItineraryDetails;
