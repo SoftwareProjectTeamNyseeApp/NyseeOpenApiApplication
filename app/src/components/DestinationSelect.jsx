@@ -387,6 +387,7 @@ export const SuggestionDropDown = memo(({sendDataToForm, placeholder}) => {
             inputContainerStyle={{
               backgroundColor: '#fff',
               borderRadius: 10,
+              width: 340
             }}
             suggestionsListContainerStyle={{
               backgroundColor: '#fff',
@@ -476,7 +477,7 @@ const DestinationSelect = ({ navigation }) => {
     }
     return (
       <View>
-        <Text>Data received!</Text>
+        <Text> </Text>
         <FlatList
           style={styles.flexItemResult}
           data={itineraries}

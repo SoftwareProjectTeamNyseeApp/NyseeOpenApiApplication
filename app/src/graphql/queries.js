@@ -181,10 +181,9 @@ export const GET_ITINERARY = gql`
               }
             },
             duration
-            realTime
-            realtimeState
+            #realTime
+            #realtimeState
             distance
-            transitLeg
             legGeometry {
               length
               points
@@ -195,16 +194,31 @@ export const GET_ITINERARY = gql`
               directionId
               routeShortName
               tripHeadsign
-              tripGeometry {
-                length
-                points
-              }
-              alerts {
-                id
-                alertHeaderText
-                alertDescriptionText
-              }
+              #tripGeometry {
+                #length
+                #points
+              #}
+              #alerts {
+                #id
+                #alertHeaderText
+                #alertDescriptionText
+              #}
               wheelchairAccessible
+              departureStoptime {
+                #realtime
+                #realtimeDeparture
+                #departureDelay
+                scheduledDeparture
+                #stopPosition
+                stop {
+                  code
+                  name
+                }
+                trip {
+                  routeShortName
+                  directionId
+                }
+              }
             }
             intermediatePlaces {
               name
