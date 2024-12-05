@@ -2,14 +2,13 @@ import Constants from 'expo-constants';
 import { Text, StyleSheet, View, FlatList, SafeAreaView, Pressable, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { Formik } from 'formik';
 import { useLazyQuery } from '@apollo/client';
-import { GET_ITINERARY, GET_EARLIER_ITINERARY } from '../graphql/queries';
+import { GET_ITINERARY } from '../graphql/queries';
 import { useItineraries } from '../contexts/ItineraryContext';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment/moment';
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react'
+import React, { memo, useCallback, useRef, useState } from 'react'
 import { AutocompleteDropdown } from 'react-native-autocomplete-dropdown';
 import { useUserLocation } from '../contexts/UserLocationContext';
-import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
 import { setItem } from '../utils/AsyncStorage';
 
 // TODO: add validation to form
