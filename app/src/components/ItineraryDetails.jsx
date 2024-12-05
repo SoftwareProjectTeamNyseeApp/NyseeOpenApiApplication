@@ -127,22 +127,29 @@ async function getStopsData(vehicleInformation) {
 }
 
 function getTimeUntilDisembark(lastStop) {
-  const arrivalTime = lastStop[0].expectedArrivalTime
-  let arrivalTimeMoment = moment(arrivalTime, 'HH:mm:ss')
-  // milliseconds until arrival, current time subtracted from arrival time
-  const msUntilArrival = moment(arrivalTimeMoment).valueOf() - moment().valueOf()
+  let timeUntilDisembark = '';
+  if (lastStop) {
+    const arrivalTime = lastStop[0].expectedArrivalTime
+    let arrivalTimeMoment = moment(arrivalTime, 'HH:mm:ss')
+    // milliseconds until arrival, current time subtracted from arrival time
+    const msUntilArrival = moment(arrivalTimeMoment).valueOf() - moment().valueOf()
 
-  // could add seconds too
-  // might show NaN when arriving
-  const minutesUntilDisembark = Math.floor(msUntilArrival / (1000 * 60))
-  const timeUntilDisembark = `${minutesUntilDisembark} minutes`
+    // could add seconds too
+    const minutesUntilDisembark = Math.floor(msUntilArrival / (1000 * 60))
+
+    if (minutesUntilDisembark >= 0) {
+      timeUntilDisembark = `in ${minutesUntilDisembark} min`
+    } else {
+      timeUntilDisembark = 'now'
+    }
+  }
   return timeUntilDisembark
 }
 
 const DisembarkComponent = ({stopsData}) => {
   if (stopsData.length === 0) return null;
 
-  let lastStop = '';
+  let lastStop = null;
   let timeUntilDisembark = '';
 
   for (let i = 0; i < stopsData.length; i++) {
@@ -152,11 +159,13 @@ const DisembarkComponent = ({stopsData}) => {
     }
   }
 
+  if (!lastStop) return null;
+
   timeUntilDisembark = getTimeUntilDisembark(lastStop)
 
   return (
-    <View>
-      <Text>Disembark in {timeUntilDisembark} at stop {lastStop[0].stopName} ({lastStop[0].stopCode})</Text>
+    <View style={styles.disembarkView}>
+      <Text style={{ textAlign: 'center' }}>Disembark {timeUntilDisembark} at stop {lastStop[0].stopName} ({lastStop[0].stopCode})</Text>
     </View>
   )
 }
@@ -388,8 +397,9 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     position: 'absolute',
+    left: 60,
     bottom: 20,
-    right: 20,
+    //right: 20,
     backgroundColor: 'blue',
     padding: 10,
     borderRadius: 5,
@@ -402,7 +412,7 @@ const styles = StyleSheet.create({
   },
   menuContent: {
     width: '80%',
-    height: '50%',
+    height: '60%',
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
@@ -433,6 +443,13 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
     fontVariant: 'small-caps',
+  },
+  disembarkView: {
+    padding: 6,
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    marginBottom: 10,
   }
 });
 
