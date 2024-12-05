@@ -15,6 +15,9 @@ const Home = ({ navigation }) => {
         <Pressable style={styles.button} onPress={() => navigation.navigate('Map')}>
           <Text style={styles.text}>{"Map"}</Text>
         </Pressable>
+        <Pressable style={styles.button} onPress={() => navigation.navigate('SavedItineraries')}>
+          <Text style={styles.text}>{"Saved Itineraries"}</Text>
+        </Pressable>
       </View>
     </View>
   );
