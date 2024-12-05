@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
 });
 
 // TODO: add validation to form
-/* const validate = (values) => {
+const formValidation = (values) => {
   let errors = {};
   if (!values.origin) {
     errors.origin = "Origin is required";
@@ -60,8 +60,7 @@ const styles = StyleSheet.create({
     errors.destination = "Destination is required";
   }
   return errors;
-} */
-
+};
 
 const LocationForm = ({ onSubmit }) => {
   return (
@@ -72,17 +71,18 @@ const LocationForm = ({ onSubmit }) => {
         date: moment(new Date()).format('YYYY-MM-DD'),
         time: moment(new Date()).format('HH:mm:ss'),
       }}
+      validate={formValidation}
       onSubmit={values => onSubmit(values)}
     >
-      {({ handleChange, handleBlur, handleSubmit, values, setFieldValue }) => (
-        <MyForm values={values} setFieldValue={setFieldValue} handleSubmit={handleSubmit} handleBlur={handleBlur} handleChange={handleChange} />
+      {({ handleChange, handleBlur, handleSubmit, values, setFieldValue, errors, touched }) => (
+        <MyForm values={values} setFieldValue={setFieldValue} handleSubmit={handleSubmit} handleBlur={handleBlur} handleChange={handleChange} errors={errors} touched={touched} />
       )}
     </Formik>
   );
 }
 
 export const MyForm = (props) => {
-  const { handleChange, handleBlur, handleSubmit, values, setFieldValue } = props;
+  const { handleChange, handleBlur, handleSubmit, values, setFieldValue, errors, touched } = props;
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [mode, setMode] = useState('date')
 
@@ -139,6 +139,7 @@ export const MyForm = (props) => {
             placeholder='Enter origin'
             handleChange={handleChange('origin')}
           />
+          {touched.origin && errors.origin && <Text style={{ color: 'red' }}>{errors.origin}</Text>}
           <SuggestionDropDown
             sendDataToForm={handleSelectedItemForDestination}
             value={values.destination}
@@ -146,6 +147,7 @@ export const MyForm = (props) => {
             placeholder='Enter destination'
             handleChange={handleChange('destination')}
           />
+          {touched.destination && errors.destination && <Text style={{ color: 'red' }}>{errors.destination}</Text>}
           <Pressable>
             <Text
               style={[styles.getButton, { width: 40, backgroundColor: "#fff", marginLeft: 15, textAlign: 'center' }]}
