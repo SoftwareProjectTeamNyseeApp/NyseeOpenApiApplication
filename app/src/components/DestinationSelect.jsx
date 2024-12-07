@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   getButton: {
     fontSize: 18,
     fontWeight: 'bold',
-    backgroundColor: 'lightblue',
+    backgroundColor: '#355F2E',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
