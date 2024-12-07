@@ -8,27 +8,6 @@ Using information from the Nysee Open API, a platform for public transportation 
 #### Nysse OpenAPI
 https://digitransit.fi/en/developers/
 
-#### Get all items
-
-```http
-  GET /api/items
-```
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `api_key` | `string` | **Required**. Your API key |
-
-#### Get item
-
-```http
-  GET /api/items/${id}
-```
-
-| Parameter | Type     | Description                       |
-| :-------- | :------- | :-------------------------------- |
-| `id`      | `string` | **Required**. Id of item to fetch |
-
-
 ## Authors
 
 - [@Juska Karo Kellokumpu](https://github.com/jkellok)
