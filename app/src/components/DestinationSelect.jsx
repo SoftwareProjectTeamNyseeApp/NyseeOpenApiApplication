@@ -45,6 +45,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
   },
+  getButtonPressed: {
+    backgroundColor: '#2A4824', // Slightly darker color for the pressed state
+  },
   pressable: {
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
@@ -212,7 +215,14 @@ export const MyForm = (props) => {
             onCancel={hideDatePicker}
           />
         </View>
-        <Pressable onPress={handleSubmit} style={[styles.getButton, { marginTop: 20 }]}>
+        <Pressable
+          onPress={handleSubmit}
+          style={({ pressed }) => [
+          styles.getButton,
+            { marginTop: 20 },
+            pressed && styles.getButtonPressed,
+            ]}
+            >
           <Text style={{ color: '#fff' }}>Get itineraries</Text>
         </Pressable>
       </View>

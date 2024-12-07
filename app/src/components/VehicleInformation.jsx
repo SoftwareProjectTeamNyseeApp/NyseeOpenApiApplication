@@ -77,7 +77,12 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData }) => {
           placeholder="line number, example 2"
           style={styles.input}
         />
-        <Pressable style={styles.getButton} onPress={() => getVehicleActivity(text.toUpperCase())}>
+        <Pressable
+          style={({ pressed }) => [
+          styles.getButton,
+          pressed && styles.getButtonPressed,
+          ]}
+        onPress={() => getVehicleActivity(text.toUpperCase())}>
           <Text style={styles.buttonText}>Get</Text>
         </Pressable>
       </View>
@@ -165,6 +170,9 @@ const styles = StyleSheet.create({
     padding: 5,
     borderRadius: 3,
     alignItems: 'center',
+  },
+  getButtonPressed: {
+    backgroundColor: '#2A4824', // Slightly darker shade for pressed state
   },
   buttonText: {
     fontWeight: 'bold',
