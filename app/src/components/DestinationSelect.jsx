@@ -48,6 +48,49 @@ const styles = StyleSheet.create({
   pressable: {
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
+    resultContainer: {
+      padding: 10,
+      backgroundColor: '#f0f8ff', // Light background for contrast
+      borderRadius: 10,
+      marginTop: 20,
+    },
+    itineraryButton: {
+      backgroundColor: '#ffffff', // White background for each button
+      borderRadius: 8,
+      padding: 15,
+      marginVertical: 5,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2, // For Android shadow
+    },
+    itineraryHeader: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    itineraryDetails: {
+      fontSize: 14,
+      color: '#555',
+    },
+    lineText: {
+      fontSize: 14,
+      color: '#007BFF', // Blue color for lines
+    },
+    loadingText: {
+      textAlign: 'center',
+      fontSize: 18,
+      color: '#007BFF',
+    },
+    errorText: {
+      textAlign: 'center',
+      fontSize: 18,
+      color: 'red',
+    },
 });
 
 // TODO: add validation to form
@@ -168,10 +211,10 @@ export const MyForm = (props) => {
             onConfirm={handleConfirm}
             onCancel={hideDatePicker}
           />
-          <Pressable onPress={handleSubmit}>
-            <Text style={styles.getButton}>Get itineraries</Text>
-          </Pressable>
         </View>
+        <Pressable onPress={handleSubmit} style={[styles.getButton, { marginTop: 20 }]}>
+          <Text style={{ color: '#fff' }}>Get itineraries</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -466,57 +509,50 @@ const DestinationSelect = ({ navigation }) => {
 
   const Result = () => {
     if (loading) {
-      return <Text>Loading...</Text>
+      return <Text style={styles.loadingText}>Loading...</Text>;
     }
     if (error) {
-      return <Text>Error: {error}</Text>
+      return <Text style={styles.errorText}>Error: {error.message}</Text>;
     }
     if (!data) {
-      return null
+      return null;
     }
+
     if (data) {
       //console.log("itineraries in if data", itineraries)
     }
     return (
-      <View>
-        <Text> </Text>
-        <FlatList
-          style={styles.flexItemResult}
-          data={itineraries}
-          renderItem={({ item }) => (
-            <View>
-              <Text>------------</Text>
-              <TouchableOpacity
-                style={styles.pressable}
-                onPress={() => navigation.navigate('ItineraryDetails', {
-                  itineraryId: item.id
-                })}
-              >
-                <Text>
-                  Time: {getItineraryTimeAndDuration(item)}
-                </Text>
-                <Text>
-                  From stop: {item.legs[0]?.from.name !== 'Origin' ? (
-                    item.legs[0]?.from.name
-                   ) : (
-                    item.legs[1]?.from.name
-                   )} { }
-                  ({item.legs[0].mode === "WALK" ? (
-                    item.legs[0].distance.toFixed()
-                  ) : (
-                    0
-                  )} m away)
-                </Text>
-                {
-                  <Text>
-                    {getLines(item)}
-                  </Text>
-                }
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      </View>
+      <View style={styles.resultContainer}>
+      <FlatList
+        style={styles.flexItemResult}
+        data={itineraries}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <Pressable
+            style={styles.itineraryButton}
+            onPress={() => navigation.navigate('ItineraryDetails', { itineraryId: item.id })} // Restore original functionality
+          >
+            <Text style={styles.itineraryHeader}>
+              Time: {getItineraryTimeAndDuration(item)}
+            </Text>
+            <Text style={styles.itineraryDetails}>
+              From stop: {item.legs[0]?.from.name !== 'Origin' ? (
+                item.legs[0]?.from.name
+              ) : (
+                item.legs[1]?.from.name
+              )} ({item.legs[0].mode === "WALK" ? (
+                item.legs[0].distance.toFixed()
+              ) : (
+                0
+              )} m away)
+            </Text>
+            <Text style={styles.lineText}>
+              {getLines(item)}
+            </Text>
+          </Pressable>
+        )}
+      />
+    </View>
     )
   }
 
