@@ -13,6 +13,7 @@ import DestinationSelect from './src/components/DestinationSelect';
 import ItineraryDetails from './src/components/ItineraryDetails';
 import Map from './src/components/Map';
 import VehicleInformation from './src/components/VehicleInformation';
+import SavedItineraries from './src/components/SavedItineraries';
 import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 
 const Stack = createNativeStackNavigator();
@@ -50,6 +51,11 @@ export default function App() {
                       name="Map"
                       component={Map}
                       options={{ title: 'Map View' }}
+                    />
+                    <Stack.Screen
+                      name="SavedItineraries"
+                      component={SavedItineraries}
+                      options={{ title: 'Saved Itineraries' }}
                     />
                 </Stack.Navigator>
               </ApolloProvider>

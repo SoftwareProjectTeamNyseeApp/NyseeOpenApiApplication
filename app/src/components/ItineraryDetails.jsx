@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Text, View, FlatList, StyleSheet, Pressable, Modal, ScrollView, Button } from "react-native";
+import { Text, View, FlatList, StyleSheet, Pressable, Modal, ScrollView, Button, TouchableOpacity } from "react-native";
 import { getItineraryTimeAndDuration } from "./DestinationSelect";
 import { useItineraries } from "../contexts/ItineraryContext";
 import moment from "moment";
@@ -7,6 +7,7 @@ import Map from "./Map";
 import { useSelectedItinerary } from "../contexts/SelectedItineraryContext";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { setItem } from "../utils/AsyncStorage";
 
 const formatTime = (dateTimeString) => {
   if (!dateTimeString) return "Now";
@@ -314,6 +315,16 @@ const ItineraryDetails = ({ route }) => {
 
   if (!itinerary) return null;
 
+  const saveItinerary = async () => {
+    const id = Math.floor(Math.random() * 100000).toString()
+    const key = `itinerary-${id}`
+    try {
+      setItem(key, itinerary)
+    } catch (error) {
+      console.log('Error saving itinerary', error)
+    }
+  }
+
   return (
     <SafeAreaProvider>
       <SafeAreaView>
@@ -321,7 +332,6 @@ const ItineraryDetails = ({ route }) => {
           <View style={styles.mapView}>
             <Map />
           </View>
-          <Text>Itinerary {itineraryId}</Text>
           <Text>Time: {getItineraryTimeAndDuration(itinerary)}</Text>
           <Text>Walk distance: {(itinerary.walkDistance).toFixed()} meters ({(itinerary.walkTime / 60).toFixed()} min)</Text>
           <FlatList
@@ -354,6 +364,12 @@ const ItineraryDetails = ({ route }) => {
               </View>
             )}
           />
+          <TouchableOpacity
+            onPress={() => saveItinerary()}
+            style={[styles.menuButton, { backgroundColor: '#009d2b', bottom: 80, left: 260 } ]}
+          >
+            <Text style={styles.buttonText}>Save</Text>
+          </TouchableOpacity>
           <StopTimeModal itinerary={itinerary}/>
         </View>
       </SafeAreaView>

@@ -6,49 +6,10 @@ import { GET_ITINERARY } from '../graphql/queries';
 import { useItineraries } from '../contexts/ItineraryContext';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment/moment';
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react'
+import React, { memo, useCallback, useRef, useState } from 'react'
 import { AutocompleteDropdown } from 'react-native-autocomplete-dropdown';
 import { useUserLocation } from '../contexts/UserLocationContext';
-import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
-
-const styles = StyleSheet.create({
-  flexContainer: {
-    flex:1,
-    backgroundColor: '#6495ed',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  flexItemInput: {
-    flexGrow: 0,
-    backgroundColor: 'lightgreen'
-  },
-  flexItemResult: {
-    flexGrow: 0,
-    backgroundColor: 'lightblue',
-    height: 300,
-    width: 300
-  },
-  input: {
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-    padding: 10,
-    width: 300
-  },
-  getButton: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    backgroundColor: 'lightblue',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  pressable: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-});
+import { setItem } from '../utils/AsyncStorage';
 
 // TODO: add validation to form
 /* const validate = (values) => {
@@ -72,7 +33,7 @@ const LocationForm = ({ onSubmit }) => {
         date: moment(new Date()).format('YYYY-MM-DD'),
         time: moment(new Date()).format('HH:mm:ss'),
       }}
-      onSubmit={values => onSubmit(values)}
+      onSubmit={values => onSubmit({values})}
     >
       {({ handleChange, handleBlur, handleSubmit, values, setFieldValue }) => (
         <MyForm values={values} setFieldValue={setFieldValue} handleSubmit={handleSubmit} handleBlur={handleBlur} handleChange={handleChange} />
@@ -146,20 +107,26 @@ export const MyForm = (props) => {
             placeholder='Enter destination'
             handleChange={handleChange('destination')}
           />
-          <Pressable>
-            <Text
-              style={[styles.getButton, { width: 40, backgroundColor: "#fff", marginLeft: 15, textAlign: 'center' }]}
-              onPress={() => switchOriginAndDestination()}
+          <View style={styles.searchOptions}>
+            <Pressable
+              style={{ marginLeft: 5, marginTop: 2, marginRight: 10, backgroundColor: '#fff', borderRadius: 10 }}
+              accessibilityLabel='Switch origin and destination'
             >
-              🔀
-            </Text>
-          </Pressable>
-          <TouchableOpacity onPress={showDatePicker} style={styles.input}>
-            <Text>{values.date || 'Enter date (YYYY-MM-DD)'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={showTimePicker} style={styles.input}>
-            <Text>{values.time || 'Enter time (HH:mm:ss)'}</Text>
-          </TouchableOpacity>
+              <Text
+                style={[styles.getButton, { backgroundColor: "#fff", textAlign: 'center', borderRadius: 10 }]}
+                onPress={() => switchOriginAndDestination()}
+              >
+                🔀
+              </Text>
+            </Pressable>
+            <TouchableOpacity onPress={showDatePicker} style={styles.input}>
+              <Text>{values.date || 'Enter date (YYYY-MM-DD)'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={showTimePicker} style={styles.input}>
+              <Text>{values.time || 'Enter time (HH:mm:ss)'}</Text>
+            </TouchableOpacity>
+          </View>
+
           <DateTimePickerModal
             isVisible={isDatePickerVisible}
             mode={mode}
@@ -243,9 +210,7 @@ const getCoordinates = async (values) => {
     return response.json();
   })
   .then(data => {
-    //console.log(values, ':', data)
     let coordinates = data.features[0].geometry.coordinates // [lon, lat]
-    console.log(`coordinates for ${values}`, coordinates)
     coordinates = coordinates.reverse() // make sure latitude is first
     return coordinates
   })
@@ -411,10 +376,13 @@ const DestinationSelect = ({ navigation }) => {
   const { itineraries, setItineraries } = useItineraries();
   // useLazyQuery to perform query later, not instantly
   const [ getCustomItinerary, { data, loading, error }] = useLazyQuery(GET_ITINERARY)
+  const [currentSearchValues, setCurrentSearchValues] = useState(null)
   let fetchedItineraries;
 
   // when form is submitted, coordinates of addresses are fetched and query is performed
-  const onSubmit = async (values) => {
+  const onSubmit = async ({values, startCursor, endCursor}) => {
+    // set current search values to be used with getting earlier or later results
+    setCurrentSearchValues(values)
     let fetchedOriginCoordinates = ''
     let fetchedDestinationCoordinates = ''
     const dateTime = moment(values.date + values.time, 'YYYY-MM-DD HH:mm').format()
@@ -438,15 +406,14 @@ const DestinationSelect = ({ navigation }) => {
         variables: {
           origin: { latitude: fetchedOriginCoordinates[0], longitude: fetchedOriginCoordinates[1] },
           destination: { latitude: fetchedDestinationCoordinates[0], longitude: fetchedDestinationCoordinates[1] },
-          dateTime: dateTime
+          dateTime: dateTime,
+          before: startCursor,
+          after: endCursor
         }
       });
 
-      // TODO: pagination
-      console.log("PAGEINFO", response.data.planConnection.pageInfo)
-
       fetchedItineraries = response.data.planConnection.edges.map((item, index) => (
-        { ...item.node, id: index + 1 }
+        { ...item.node, id: Math.floor(Math.random() * 1000000) }
       ))
       setItineraries(fetchedItineraries)
     } catch (error) {
@@ -462,6 +429,18 @@ const DestinationSelect = ({ navigation }) => {
     }
   }
 
+  const getEarlierResults = () => {
+    const startCursor = data.planConnection.pageInfo.startCursor
+    const values = currentSearchValues
+    onSubmit({values, startCursor})
+  }
+
+  const getLaterResults = () => {
+    const endCursor = data.planConnection.pageInfo.endCursor
+    const values = currentSearchValues
+    onSubmit({values, endCursor})
+  }
+
   const Result = () => {
     if (loading) {
       return <Text>Loading...</Text>
@@ -472,18 +451,30 @@ const DestinationSelect = ({ navigation }) => {
     if (!data) {
       return null
     }
-    if (data) {
-      //console.log("itineraries in if data", itineraries)
+
+    const saveItinerary = async (itinerary) => {
+      const id = Math.floor(Math.random() * 100000).toString()
+      const key = `itinerary-${id}`
+      try {
+        setItem(key, itinerary)
+      } catch (error) {
+        console.log('Error saving itinerary', error)
+      }
     }
+
     return (
-      <View>
-        <Text> </Text>
+      <View style={styles.resultsContainer}>
+        <TouchableOpacity
+          style={styles.loadMorePressable}
+          onPress={() => getEarlierResults()}
+        >
+          <Text>Load earlier</Text>
+        </TouchableOpacity>
         <FlatList
           style={styles.flexItemResult}
           data={itineraries}
           renderItem={({ item }) => (
-            <View>
-              <Text>------------</Text>
+            <View /* style={{ flexDirection: 'row' }} */>
               <TouchableOpacity
                 style={styles.pressable}
                 onPress={() => navigation.navigate('ItineraryDetails', {
@@ -494,7 +485,7 @@ const DestinationSelect = ({ navigation }) => {
                   Time: {getItineraryTimeAndDuration(item)}
                 </Text>
                 <Text>
-                  From stop: {item.legs[0]?.from.name !== 'Origin' ? (
+                  From: {item.legs[0]?.from.name !== 'Origin' ? (
                     item.legs[0]?.from.name
                    ) : (
                     item.legs[1]?.from.name
@@ -511,9 +502,21 @@ const DestinationSelect = ({ navigation }) => {
                   </Text>
                 }
               </TouchableOpacity>
+              {/* <TouchableOpacity
+                onPress={() => saveItinerary(item)}
+                style={[styles.pressable, { backgroundColor: '#00ce38' } ]}
+              >
+                <Text>Save</Text>
+              </TouchableOpacity> */}
             </View>
           )}
         />
+        <TouchableOpacity
+          style={styles.loadMorePressable}
+          onPress={() => getLaterResults()}
+        >
+          <Text>Load later</Text>
+        </TouchableOpacity>
       </View>
     )
   }
@@ -525,5 +528,69 @@ const DestinationSelect = ({ navigation }) => {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  flexContainer: {
+    flex:1,
+    backgroundColor: '#6495ed',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  flexItemInput: {
+    flexGrow: 0,
+    backgroundColor: '#5f5f5f',
+    borderRadius: 5,
+    margin: 8,
+    padding: 5,
+  },
+  flexItemResult: {
+    flexGrow: 0,
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+    margin: 4
+  },
+  input: {
+    margin: 4,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10
+  },
+  getButton: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    backgroundColor: '#404040',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    color: '#fff'
+  },
+  pressable: {
+    backgroundColor: '#e2e2e2',
+    borderRadius: 5,
+    margin: 5,
+    padding: 5
+  },
+  resultsContainer: {
+    padding: 4,
+    backgroundColor: '#ffffff',
+    borderRadius: 5,
+    marginTop: 10,
+    height: '60%',
+    width: '90%'
+  },
+  searchOptions: {
+    flexDirection: 'row',
+    marginBottom: 5
+  },
+  loadMorePressable: {
+    backgroundColor: '#b7b7b7',
+    borderRadius: 5,
+    margin: 5,
+    padding: 5,
+    alignItems: 'center'
+  }
+});
 
 export default DestinationSelect;

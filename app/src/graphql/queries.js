@@ -135,12 +135,17 @@ export const GET_ITINERARY = gql`
     $origin: PlanCoordinateInput!
     $destination: PlanCoordinateInput!
     $dateTime: OffsetDateTime
+    $before: String
+    $after: String
   ) {
 	  planConnection(
       destination: { location: { coordinate: $destination } }
       origin: { location: { coordinate: $origin } }
       dateTime: { earliestDeparture: $dateTime }
       first: 5
+      last: 5
+      before: $before
+      after: $after
     ) {
       pageInfo {
         startCursor

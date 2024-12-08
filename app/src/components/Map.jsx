@@ -115,8 +115,9 @@ const Map = () => {
           showsCompass={true}
           showsMyLocationButton={true}
           showsIndoors={false}
+          showsUserLocation={true}
         >
-          <Marker coordinate={region} title="You are here" />
+          {/* <Marker coordinate={region} title="You are here" /> */}
           {vehicleInformation && // for multiple markers
             vehicleInformation.map((v, index) => (
               <Marker
