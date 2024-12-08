@@ -211,7 +211,7 @@ const StopTimeModal = (itinerary) => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View /* style={{ flex: 1 }} */>
       <Pressable style={styles.menuButton} onPress={toggleMenu}>
         <Text style={styles.buttonText}>Details</Text>
       </Pressable>
@@ -274,16 +274,13 @@ const IntermediatePlaces = ({legs}) => {
 
   return (
     <>
-      <Text>Intermediate stops:</Text>
       <FlatList
         style={styles.innerList}
         data={intermediatePlaces}
         keyExtractor={item => item.stop.id}
         renderItem={({ item }) => (
           <View key={item.stop.id}>
-            <Text>Name: {item.name} ({item.stop.code})</Text>
-            <Text>Arrival time: {getStopTime(item.arrival)}</Text>
-            <Text>Departure time: {getStopTime(item.departure)}</Text>
+            <Text>{getStopTime(item.arrival)} {item.name} ({item.stop.code})</Text>
           </View>
         )}
       />
@@ -332,45 +329,48 @@ const ItineraryDetails = ({ route }) => {
           <View style={styles.mapView}>
             <Map />
           </View>
-          <Text>Time: {getItineraryTimeAndDuration(itinerary)}</Text>
-          <Text>Walk distance: {(itinerary.walkDistance).toFixed()} meters ({(itinerary.walkTime / 60).toFixed()} min)</Text>
-          <FlatList
-            style={styles.flexItemResult}
-            data={itinerary.legs}
-            renderItem={({ item }) => (
-              <View>
-                <Text>-------------</Text>
-                <Text>Start time: {getStopTime(item.start)}</Text>
-                <Text>End time: {getStopTime(item.end)}</Text>
-                <Text>Mode: {item.mode}</Text>
-                {item.trip &&
-                  <Text>Line: {item.trip.routeShortName} (headsign: {item.trip.tripHeadsign})</Text>
-                }
-                <Text>From: {item.from.name} {item.from.stop && <Text>({item.from.stop.code})</Text>}</Text>
-                <Text>To: {item.to.name}</Text>
-                <Text>Distance: {(item.distance / 1000).toFixed(2)} km</Text>
-                <Text>Duration: {(item.duration / 60).toFixed()} minutes</Text>
-                {item.intermediatePlaces &&
-                  <Pressable
-                    onPress={() => setShowIntermediatePlaces(!showIntermediatePlaces)}
-                    style={styles.button}
-                  >
-                    <Text>{showIntermediatePlaces ? "Hide" : "Show"} intermediate stops</Text>
-                  </Pressable>
-                }
-                {item.intermediatePlaces && showIntermediatePlaces &&
-                  <IntermediatePlaces legs={item} />
-                }
-              </View>
-            )}
-          />
-          <TouchableOpacity
-            onPress={() => saveItinerary()}
-            style={[styles.menuButton, { backgroundColor: '#009d2b', bottom: 80, left: 260 } ]}
-          >
-            <Text style={styles.buttonText}>Save</Text>
-          </TouchableOpacity>
-          <StopTimeModal itinerary={itinerary}/>
+          <View style={styles.detailsContainer}>
+            <View style={{ backgroundColor: '#f0f0f0', borderRadius: 5, padding: 2, alignItems: 'center', marginBottom: 5, paddingHorizontal: 5 }}>
+              <Text>{getItineraryTimeAndDuration(itinerary)}</Text>
+              <Text>Walk distance: {(itinerary.walkDistance).toFixed()} meters ({(itinerary.walkTime / 60).toFixed()} min)</Text>
+            </View>
+
+            <FlatList
+              style={styles.flexItemResult}
+              data={itinerary.legs}
+              renderItem={({ item }) => (
+                <View style={styles.listItem}>
+                  <Text>{getStopTime(item.start)}-{getStopTime(item.end)} ({(item.duration / 60).toFixed()} min)</Text>
+                  <Text><Text style={{ textTransform: 'capitalize' }}>{item.mode}</Text> from {item.from.name}{item.from.stop && <Text> ({item.from.stop.code})</Text>} to {item.to.name}{item.to.stop && <Text> ({item.to.stop.code})</Text>}</Text>
+                  {item.trip &&
+                    <Text>Line: {item.trip.routeShortName} (headsign: {item.trip.tripHeadsign})</Text>
+                  }
+                  <Text>Distance: {(item.distance / 1000).toFixed(2)} km</Text>
+                  {item.intermediatePlaces &&
+                    <Pressable
+                      onPress={() => setShowIntermediatePlaces(!showIntermediatePlaces)}
+                      style={[ styles.button, {marginTop: 5 }]}
+                    >
+                      <Text style={{ color: '#fff' }}>{showIntermediatePlaces ? "Hide" : "Show"} intermediate stops</Text>
+                    </Pressable>
+                  }
+                  {item.intermediatePlaces && showIntermediatePlaces &&
+                    <IntermediatePlaces legs={item} />
+                  }
+                </View>
+              )}
+            />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+            <TouchableOpacity
+              onPress={() => saveItinerary()}
+              style={[styles.menuButton, { backgroundColor: '#009d2b', /* bottom: 80, left: 260 */ } ]}
+            >
+              <Text style={styles.buttonText}>Save</Text>
+            </TouchableOpacity>
+            <StopTimeModal itinerary={itinerary}/>
+          </View>
+
         </View>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -382,29 +382,34 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    height: '100%',
   },
   flexItemResult: {
     flexGrow: 0,
-    backgroundColor: 'lightblue',
-    height: "48%",
-    width: 300
+    backgroundColor: '#d0d0d0',
+    borderRadius: 5,
+    width: '95%'
   },
   innerList: {
-    backgroundColor: 'lightblue',
-    //flex: 1,
-    paddingLeft: 20,
+    backgroundColor: '#d0d0d0',
+    paddingLeft: 8,
+    borderRadius: 5,
+    margin: 4,
+    padding: 4,
+    width: '90%'
   },
   mapView: {
-    width: 400,
-    height: 300,
+    width: '100%',
+    height: '40%',
   },
   button: {
-    backgroundColor: '#47a2ec',
+    backgroundColor: '#404040',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
     borderRadius: 10,
-    width: "75%"
+    width: "75%",
   },
   buttonText: {
     fontWeight: 'bold',
@@ -412,13 +417,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   menuButton: {
-    position: 'absolute',
-    left: 60,
-    bottom: 20,
-    //right: 20,
     backgroundColor: 'blue',
     padding: 10,
     borderRadius: 5,
+    marginHorizontal: 30
   },
   menuContainer: {
     flex: 1,
@@ -466,6 +468,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
     marginBottom: 10,
+  },
+  listItem: {
+    margin: 4,
+    marginHorizontal: 6,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  detailsContainer: {
+    margin: 2,
+    padding: 5,
+    borderRadius: 5,
+    //backgroundColor: '#d0d0d0',
+    alignItems: 'center',
+    height: '51%',
+    width: '95%'
   }
 });
 
