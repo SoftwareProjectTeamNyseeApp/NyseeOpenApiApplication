@@ -5,12 +5,12 @@ import * as Location from 'expo-location';
 const polyline = require('@mapbox/polyline');
 import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
 
-const Map = () => {
+const Map = ({ vehicleRoute }) => {
   const {
     vehicleInformation,
     journeyGeometry,
     stopCoordinates,
-    legModes
+    legModes,
   } = useSelectedItinerary();
 
   const [region, setRegion] = useState(null);
@@ -18,6 +18,7 @@ const Map = () => {
   const mapRef = useRef(null); // Create a ref for the MapView
   const [coords, setCoords] = useState([]); // array of Array<LatLng> for polylines for the map
   const [polylineStyles, setPolylineStyles] = useState([]);
+  const [vehicleRouteForMap, setVehicleRouteForMap] = useState([]); // show vehicle journey route for vehicleInformation view
 
   useEffect(() => {
     (async () => {
@@ -45,6 +46,7 @@ const Map = () => {
       for (i = 0; i < journeyGeometry.length; i++) {
         points.push(polyline.decode(journeyGeometry[i]))
       }
+
       // make sure type is Array<LatLng>
       let arrayOfCoordinates = []
       for (i = 0; i < points.length; i++) {
@@ -98,6 +100,34 @@ const Map = () => {
       }, 1000);
     }
   }, [vehicleInformation]);
+
+  useEffect(() => {
+    if (vehicleRoute && vehicleRoute.length > 0) {
+      // encoded coordinates in form lat1,lon2:delta lat2,delta lon2:delta lat3,delta lon3
+      let vehicleRouteArray = vehicleRoute.split(':')
+      let decodedCoordinates = []
+      let firstPair = vehicleRouteArray[0]
+      // save initial coordinate pair
+      decodedCoordinates.push({
+        latitude: firstPair.split(',')[0] / 100000,
+        longitude: firstPair.split(',')[1] / 100000
+      })
+      // subtract delta coordinates from current coordinate and save into array
+      let currentCoordinatePair = [firstPair.split(',')[0], firstPair.split(',')[1]]
+      for (let i = 1; i < vehicleRouteArray.length; i++) {
+        let deltaPair = vehicleRouteArray[i].split(',')
+        let subtracted = [currentCoordinatePair[0] - deltaPair[0], currentCoordinatePair[1] - deltaPair[1]]
+        decodedCoordinates.push({
+          latitude: subtracted[0] / 100000,
+          longitude: subtracted[1] / 100000
+        })
+        currentCoordinatePair = [subtracted[0], subtracted[1]]
+      }
+
+      setVehicleRouteForMap(decodedCoordinates)
+      // [{"latitude": 61.232, "longitude": 23.4839}, {...}, ...]
+    }
+  }, [vehicleRoute])
 
   if (errorMsg) {
     return <Text>{errorMsg}</Text>;
@@ -159,6 +189,13 @@ const Map = () => {
                 fillColor={'rgba(201,0,201,0.5)'}
               />
             ))
+          }
+          {vehicleRouteForMap && vehicleRouteForMap.length > 0 &&
+            <Polyline
+              coordinates={vehicleRouteForMap}
+              strokeWidth={4}
+              strokeColor={'rgba(201,0,201,0.8)'}
+            />
           }
         </MapView>
       )}

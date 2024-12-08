@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Text, View, Pressable, TextInput, SafeAreaView, StyleSheet, Modal, Button, ScrollView } from 'react-native';
 import Map from './Map'; // Import the Map component
 import { useSelectedItinerary } from '../contexts/SelectedItineraryContext';
@@ -21,7 +21,7 @@ const getStopPointName = async (stopPointRef) => {
   }
 };
 
-const VehicleActivity = ({ setVehicleInformation, setStopsData }) => {
+const VehicleActivity = ({ setVehicleInformation, setStopsData, setVehicleRoute }) => {
   const baseUrl = "https://data.itsfactory.fi/journeys/api/1";
   const [text, onChangeText] = useState('');
 
@@ -43,6 +43,9 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData }) => {
         })
 
         setVehicleInformation(vehicleData)
+
+        const vehicleRoute = await getVehicleJourneyRoute(vehicleData)
+        setVehicleRoute(vehicleRoute)
 
         // Check if onwardsCalls exists and is an array
         if (Array.isArray(vehicleData[0].details.onwardCalls)) {
@@ -85,9 +88,23 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData }) => {
   );
 };
 
+async function getVehicleJourneyRoute(vehicleInformation) {
+  try {
+    const response = await fetch(vehicleInformation[0].details.framedVehicleJourneyRef.datedVehicleJourneyRef);
+    const json = await response.json();
+    const anotherResponse = await fetch(json.body[0].routeUrl)
+    const anotherJson = await anotherResponse.json();
+    return anotherJson.body[0].geographicCoordinateProjection; // route coordinates
+  } catch (error) {
+    console.error("Error fetching route details:", error);
+    return "Unknown route";
+  }
+}
+
 const VehicleInformation = () => {
   const [stopsData, setStopsData] = useState([]); // New state for stops data
   const [isMenuVisible, setMenuVisible] = useState(false);
+  const [vehicleRoute, setVehicleRoute] = useState([]);
 
   const { setVehicleInformation } = useSelectedItinerary();
 
@@ -106,8 +123,8 @@ const VehicleInformation = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <VehicleActivity setVehicleInformation={setVehicleInformation} setStopsData={setStopsData} />
-      <Map />
+      <VehicleActivity setVehicleInformation={setVehicleInformation} setStopsData={setStopsData} setVehicleRoute={setVehicleRoute} />
+      <Map vehicleRoute={vehicleRoute} />
 
       {/* Button to toggle the menu */}
       <Pressable style={styles.menuButton} onPress={toggleMenu}>

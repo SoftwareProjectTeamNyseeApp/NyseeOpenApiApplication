@@ -30,8 +30,8 @@ const LocationForm = ({ onSubmit }) => {
       initialValues={{
         origin: '',
         destination: '',
-        date: moment(new Date()).format('YYYY-MM-DD'),
-        time: moment(new Date()).format('HH:mm:ss'),
+        date: moment(new Date()).format('DD.MM.'),
+        time: moment(new Date()).format('HH:mm'),
       }}
       onSubmit={values => onSubmit({values})}
     >
@@ -67,10 +67,10 @@ export const MyForm = (props) => {
 
   const handleConfirm = (dateTime) => {
     if(mode === 'date') {
-      setFieldValue('date', moment(dateTime).format('YYYY-MM-DD'))
+      setFieldValue('date', moment(dateTime).format('DD.MM.'))
     }
     if(mode === 'time') {
-      setFieldValue('time', moment(dateTime).format('HH:mm:ss'))
+      setFieldValue('time', moment(dateTime).format('HH:mm'))
     }
     hideDatePicker();
   };
@@ -115,15 +115,16 @@ export const MyForm = (props) => {
               <Text
                 style={[styles.getButton, { backgroundColor: "#fff", textAlign: 'center', borderRadius: 10 }]}
                 onPress={() => switchOriginAndDestination()}
+                accessibilityLabel='Switch origin and destination'
               >
                 🔀
               </Text>
             </Pressable>
-            <TouchableOpacity onPress={showDatePicker} style={styles.input}>
-              <Text>{values.date || 'Enter date (YYYY-MM-DD)'}</Text>
+            <TouchableOpacity onPress={showDatePicker} style={styles.input} accessibilityLabel='Enter date'>
+              <Text>{values.date || 'Enter date (DD.MM.)'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={showTimePicker} style={styles.input}>
-              <Text>{values.time || 'Enter time (HH:mm:ss)'}</Text>
+            <TouchableOpacity onPress={showTimePicker} style={styles.input} accessibilityLabel='Enter time'>
+              <Text>{values.time || 'Enter time (HH:mm)'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -385,7 +386,7 @@ const DestinationSelect = ({ navigation }) => {
     setCurrentSearchValues(values)
     let fetchedOriginCoordinates = ''
     let fetchedDestinationCoordinates = ''
-    const dateTime = moment(values.date + values.time, 'YYYY-MM-DD HH:mm').format()
+    const dateTime = moment(values.date + values.time, 'DD.MM. HH:mm').format()
 
     // if the address is selected from suggestions, it already has coordinates resolved
     if (values.origin.coordinates) {
