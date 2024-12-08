@@ -134,9 +134,16 @@ export const MyForm = (props) => {
             onConfirm={handleConfirm}
             onCancel={hideDatePicker}
           />
-          <Pressable onPress={handleSubmit}>
-            <Text style={styles.getButton}>Get itineraries</Text>
+          <Pressable
+            onPress={handleSubmit}
+            style={({ pressed }) => [
+              styles.getButton,
+              pressed && styles.getButtonPressed,
+            ]}
+          >
+            <Text style={styles.getButtonText}>Get itineraries</Text>
           </Pressable>
+
         </View>
       </View>
     </SafeAreaView>
@@ -469,7 +476,7 @@ const DestinationSelect = ({ navigation }) => {
           style={styles.loadMorePressable}
           onPress={() => getEarlierResults()}
         >
-          <Text>Load earlier</Text>
+          <Text style={styles.getButton}>Load earlier</Text>
         </TouchableOpacity>
         <FlatList
           style={styles.flexItemResult}
@@ -516,7 +523,7 @@ const DestinationSelect = ({ navigation }) => {
           style={styles.loadMorePressable}
           onPress={() => getLaterResults()}
         >
-          <Text>Load later</Text>
+          <Text style={styles.getButton}>Load later</Text>
         </TouchableOpacity>
       </View>
     )
@@ -541,14 +548,14 @@ const styles = StyleSheet.create({
   },
   flexItemInput: {
     flexGrow: 0,
-    backgroundColor: '#5f5f5f',
+    backgroundColor: '#3C552D',
     borderRadius: 5,
     margin: 8,
     padding: 5,
   },
   flexItemResult: {
     flexGrow: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#D7B26D',
     borderRadius: 5,
     margin: 4
   },
@@ -559,23 +566,32 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   getButton: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    backgroundColor: '#CA7373',
+    padding: 5,
+    borderRadius: 25,
+    alignItems: 'center',
+    color: 'black'
+  },
+  getButtonPressed: {
+    backgroundColor: '#A85656',
+    transform: [{ scale: 0.95 }],
+  },
+  getButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    backgroundColor: '#404040',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    color: '#fff'
+    color: 'black',
   },
   pressable: {
-    backgroundColor: '#e2e2e2',
+    backgroundColor: '#EEE2B5',
     borderRadius: 5,
     margin: 5,
     padding: 5
   },
   resultsContainer: {
     padding: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#D7B26D',
     borderRadius: 5,
     marginTop: 10,
     height: '60%',
@@ -586,8 +602,10 @@ const styles = StyleSheet.create({
     marginBottom: 5
   },
   loadMorePressable: {
-    backgroundColor: '#b7b7b7',
-    borderRadius: 5,
+    fontSize: 18,
+    fontWeight: 'bold',
+    backgroundColor: '#CA7373',
+    borderRadius: 25,
     margin: 5,
     padding: 5,
     alignItems: 'center'

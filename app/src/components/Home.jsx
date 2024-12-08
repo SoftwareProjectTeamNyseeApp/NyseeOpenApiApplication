@@ -6,18 +6,36 @@ const Home = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to the Nysee App</Text>
       <View style={styles.buttonContainer}>
-        <Pressable style={styles.button} onPress={() => navigation.navigate('DestinationSelect')}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={() => navigation.navigate('DestinationSelect')}
+        >
           <Text style={styles.text}>{"Find Destination"}</Text>
         </Pressable>
-        <Pressable style={styles.button} onPress={() => navigation.navigate('VehicleInfo')}>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={() => navigation.navigate('VehicleInfo')}
+        >
           <Text style={styles.text}>{"Vehicle Information"}</Text>
         </Pressable>
-        <Pressable style={styles.button} onPress={() => navigation.navigate('Map')}>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={() => navigation.navigate('Map')}
+        >
           <Text style={styles.text}>{"Map"}</Text>
         </Pressable>
-        <Pressable style={styles.button} onPress={() => navigation.navigate('SavedItineraries')}>
-          <Text style={styles.text}>{"Saved Itineraries"}</Text>
-        </Pressable>
+
       </View>
     </View>
   );
@@ -49,6 +67,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     elevation: 3,
     marginVertical: 10,
+  },
+  buttonPressed: {
+    backgroundColor: '#372f70',
+    transform: [{ scale: 0.98 }],
   },
   text: {
     fontSize: 16,

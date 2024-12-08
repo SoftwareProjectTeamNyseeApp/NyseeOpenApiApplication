@@ -80,7 +80,13 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData, setVehicleRoute 
           placeholder="line number, example 2"
           style={styles.input}
         />
-        <Pressable style={styles.getButton} onPress={() => getVehicleActivity(text.toUpperCase())}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.getButton,
+            pressed && styles.getButtonPressed,
+          ]}
+          onPress={() => getVehicleActivity(text.toUpperCase())}
+        >
           <Text style={styles.buttonText}>Get</Text>
         </Pressable>
       </View>
@@ -127,9 +133,16 @@ const VehicleInformation = () => {
       <Map vehicleRoute={vehicleRoute} />
 
       {/* Button to toggle the menu */}
-      <Pressable style={styles.menuButton} onPress={toggleMenu}>
-        <Text style={styles.buttonText}>Details</Text>
+      <Pressable
+        style={({ pressed }) => [
+          styles.menuButton,
+          pressed && styles.menuButtonPressed,
+        ]}
+        onPress={toggleMenu}
+      >
+        <Text style={styles.menuText}>Details</Text>
       </Pressable>
+
 
       {/* Menu Modal */}
       <Modal
@@ -178,23 +191,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff'
   },
   getButton: {
-    backgroundColor: '#536493',
+    backgroundColor: '#E38E49',
     padding: 5,
     borderRadius: 3,
     alignItems: 'center',
   },
+  getButtonPressed: {
+    backgroundColor: '#C7793F',
+    transform: [{ scale: 0.98 }],
+  },
   buttonText: {
     fontWeight: 'bold',
-    color: 'white',
+    color: 'black',
     fontSize: 16,
   },
   menuButton: {
     position: 'absolute',
     bottom: 20,
     right: 20,
-    backgroundColor: 'blue',
+    backgroundColor: '#1F509A',
     padding: 10,
     borderRadius: 5,
+  },
+  menuButtonPressed: {
+    backgroundColor: '#17407A',
+    transform: [{ scale: 0.95 }],
+  },
+  menuText: {
+    fontWeight: 'bold',
+    color: 'white',
+    fontSize: 15,
   },
   menuContainer: {
     flex: 1,
