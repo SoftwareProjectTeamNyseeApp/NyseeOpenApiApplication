@@ -454,20 +454,10 @@ const DestinationSelect = ({ navigation }) => {
       return <Text>Loading...</Text>
     }
     if (error) {
-      return <Text>Error: {error}</Text>
+      return <Text>An error occurred.</Text>
     }
     if (!data) {
       return null
-    }
-
-    const saveItinerary = async (itinerary) => {
-      const id = Math.floor(Math.random() * 100000).toString()
-      const key = `itinerary-${id}`
-      try {
-        setItem(key, itinerary)
-      } catch (error) {
-        console.log('Error saving itinerary', error)
-      }
     }
 
     return (
