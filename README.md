@@ -14,5 +14,12 @@ https://digitransit.fi/en/developers/
 - [@Le Hoang Long](https://github.com/LongleKuro2106)
 - [@Nguyen Truong Minh Kiet](https://github.com/JerryPlayzGames)
 
+## How to use
+Required: Visual Studio Code, Android Studio or Expo Go, Digitransit API registration
 
+1. Install Expo GO (SDK 51) on your phone (preferably Android) or alternatively use Android Studio to simulate Android phone (https://docs.expo.dev/workflow/android-studio-emulator/)
+2. Git clone this repository
+3. In .env file, add API_NAME and API_KEY after registering to digitransit here: https://portal-api.digitransit.fi/ 
+4. In Visual Studio Code terminal, move to app folder "cd app" and start app with "npm start"
+5. Scan QR code with your phone (make sure you're using the same network on your computer and phone) or use Android Studio
 
