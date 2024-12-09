@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 const Home = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to the Nysee App</Text>
+      <Text style={styles.title}>Welcome to the Nysse App</Text>
       <View style={styles.buttonContainer}>
         <Pressable
           style={({ pressed }) => [
@@ -34,6 +34,16 @@ const Home = ({ navigation }) => {
           onPress={() => navigation.navigate('Map')}
         >
           <Text style={styles.text}>{"Map"}</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={() => navigation.navigate('SavedItineraries')}
+        >
+          <Text style={styles.text}>{"Saved Itineraries"}</Text>
         </Pressable>
 
       </View>
