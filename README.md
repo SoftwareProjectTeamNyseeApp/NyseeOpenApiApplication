@@ -5,8 +5,12 @@ Nysse Open Api App is an app that ultilize the Nysse Open API, in order to provi
 Using information from the Nysee Open API, a platform for public transportation and traffic data, the program offers real-time updates on transit options, delays, and the best routes. This program aims to improve urban mobility and meet the needs of residents and tourists about smart city solutions.
 
 ## API Reference
-#### Nysse OpenAPI
-https://digitransit.fi/en/developers/
+#### Nysse developers web page
+https://www.nysse.fi/en/developers.html
+#### Digitransit Journey Planner API
+https://digitransit.fi/en/developers/ for itinerary planning
+#### ITS Factory Journeys
+https://intra.infotripla.fi/itsfactorywiki/index.php/Journeys_API for realtime vehicle activity
 
 ## Authors
 
