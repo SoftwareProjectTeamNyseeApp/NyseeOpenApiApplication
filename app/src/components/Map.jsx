@@ -102,6 +102,10 @@ const Map = ({ vehicleRoute }) => {
   }, [vehicleInformation]);
 
   useEffect(() => {
+    if (!vehicleRoute) {
+      // clear route on map if no data for it found
+      setVehicleRouteForMap([])
+    }
     if (vehicleRoute && vehicleRoute.length > 0) {
       // encoded coordinates in form lat1,lon2:delta lat2,delta lon2:delta lat3,delta lon3
       let vehicleRouteArray = vehicleRoute.split(':')

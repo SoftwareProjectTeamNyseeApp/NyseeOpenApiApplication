@@ -44,8 +44,10 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData, setVehicleRoute 
 
         setVehicleInformation(vehicleData)
 
-        const vehicleRoute = await getVehicleJourneyRoute(vehicleData)
-        setVehicleRoute(vehicleRoute)
+        if (vehicleData.length > 0) {
+          const vehicleRoute = await getVehicleJourneyRoute(vehicleData)
+          setVehicleRoute(vehicleRoute)
+        }
 
         // Check if onwardsCalls exists and is an array
         if (Array.isArray(vehicleData[0].details.onwardCalls)) {
@@ -96,14 +98,19 @@ const VehicleActivity = ({ setVehicleInformation, setStopsData, setVehicleRoute 
 
 async function getVehicleJourneyRoute(vehicleInformation) {
   try {
-    const response = await fetch(vehicleInformation[0].details.framedVehicleJourneyRef.datedVehicleJourneyRef);
+    const journeyRefUrl = vehicleInformation[0].details.framedVehicleJourneyRef.datedVehicleJourneyRef
+    if (!journeyRefUrl) return null;
+    const response = await fetch(journeyRefUrl);
     const json = await response.json();
-    const anotherResponse = await fetch(json.body[0].routeUrl)
+    if (!json.body[0]) return null;
+    const routeUrl = json.body[0].routeUrl
+    const anotherResponse = await fetch(routeUrl)
     const anotherJson = await anotherResponse.json();
+    if (!anotherJson.body[0]) return null;
     return anotherJson.body[0].geographicCoordinateProjection; // route coordinates
   } catch (error) {
     console.error("Error fetching route details:", error);
-    return "Unknown route";
+    return null;
   }
 }
 
