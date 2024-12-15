@@ -27,5 +27,9 @@ Required: Visual Studio Code, Android Studio or Expo Go, Digitransit API registr
 4. In Visual Studio Code terminal, move to app folder "cd app" and start app with "npm start"
 5. Scan QR code with your phone (make sure you're using the same network on your computer and phone) or use Android Studio
 
+## Demo
+
+[![Demo video](./videos/demovideo.mp4)](./videos/demovideo.mp4)
+
 ## Known bugs
 - Visual bug: origin and destination fields are not updated when the values are switched
